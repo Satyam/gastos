@@ -101,6 +101,12 @@ out.log(`<html>
       th {
         font-weight: bolder;
       }
+      .group {
+        text-align: left;
+        font-size: larger;
+        background-color: silver;
+        padding-left: 1em;
+      }
     </style>
   </head>
   <body>
@@ -108,6 +114,7 @@ out.log(`<html>
 const [startY, startM] = splitDate(startDate);
 const [endY, endM] = splitDate(endDate);
 
+let numCols = 1;
 out.log('<tr><td></td>');
 for (let y = startY, m = startM; y <= endY || m <= endM; m++) {
   if (m > 12) {
@@ -115,33 +122,54 @@ for (let y = startY, m = startM; y <= endY || m <= endM; m++) {
     y++;
     if (y > endY) break;
   }
+  numCols++;
   out.log('<th>%s</th>', ymKey(joinDate(y, m)));
 }
 out.log('</tr>');
-for (const [concepto, short] of conocidos) {
-  const entriesConcepto = hash[short];
-  out.log('<tr><th>%s</th>', short);
 
-  for (let y = startY, m = startM; y <= endY || m <= endM; m++) {
-    if (m > 12) {
-      m = 1;
-      y++;
-      if (y > endY) break;
+const headings = await readAllLines('Headings.txt');
+headings.forEach((h) => {
+  if (h.startsWith('-')) {
+    out.log(
+      '<tr><th class="group" colspan="%d">%s</th></tr>',
+      numCols,
+      h.substring(1)
+    );
+  } else {
+    const entriesConcepto = hash[h];
+    out.log('<tr><th>%s</th>', h);
+
+    for (let y = startY, m = startM; y <= endY || m <= endM; m++) {
+      if (m > 12) {
+        m = 1;
+        y++;
+        if (y > endY) break;
+      }
+      const entries = entriesConcepto[ymKey(joinDate(y, m))];
+      if (entries) {
+        let total = 0;
+        out.log('<td><table>');
+        entries.forEach(([date, _, i]) => {
+          total += i;
+          const [_y, _m, d] = splitDate(date);
+          out.log(
+            '<tr><td>%s</td><td>%d</td></tr>',
+            d,
+            parseFloat(i).toFixed(2)
+          );
+        });
+        if (entries.length > 1) {
+          out.log('<tr><th>Total</td><td>%d</td></tr>', total.toFixed(2));
+        }
+        out.log('</table></td>');
+      } else {
+        out.log('<td></td>');
+      }
     }
-    const entries = entriesConcepto[ymKey(joinDate(y, m))];
-    if (entries) {
-      out.log('<td><table>');
-      entries.forEach(([d, _, i]) => {
-        out.log('<tr><td>%s</td><td>%s</td></tr>', d, i);
-      });
-      out.log('</table></td>');
-    } else {
-      out.log('<td></td>');
-    }
+
+    out.log('</tr>');
   }
-
-  out.log('</tr>');
-}
+});
 
 out.log('</table></body></html>');
 // console.log(conocidos);

@@ -1,7 +1,10 @@
 import { Console } from 'node:console';
 export const readAllLines = async (fname) => {
   const fileContents = await fs.readFile(fname, 'latin1');
-  return fileContents.trim().split('\n');
+  return fileContents
+    .trim()
+    .split('\n')
+    .map((s) => s.trim());
 };
 
 export const readConocidos = async (fname) => {
