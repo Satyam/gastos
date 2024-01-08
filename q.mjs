@@ -107,6 +107,21 @@ out.log(`<html>
         background-color: silver;
         padding-left: 1em;
       }
+      td table {
+        width: 100%
+      }
+      td table td {
+        text-align: right;
+      }
+      .red {
+        background-color: red;
+      }
+      .yellow {
+        background-color: yellow;
+      }
+      .blue {
+        background-color: blue;
+      }
     </style>
   </head>
   <body>
@@ -114,7 +129,7 @@ out.log(`<html>
 const [startY, startM] = splitDate(startDate);
 const [endY, endM] = splitDate(endDate);
 
-let numCols = 1;
+let numCols = 2;
 out.log('<tr><td></td>');
 for (let y = startY, m = startM; y <= endY || m <= endM; m++) {
   if (m > 12) {
@@ -126,6 +141,14 @@ for (let y = startY, m = startM; y <= endY || m <= endM; m++) {
   out.log('<th>%s</th>', ymKey(joinDate(y, m)));
 }
 out.log('</tr>');
+
+const colores = (total, previsto) => {
+  const err = previsto / total;
+  if (err > 1.3 || err < 0.7) return 'red';
+  if (err > 1.2 || err < 0.8) return 'yellow';
+  if (err > 1.1 || err < 0.9) return 'blue';
+  return '';
+};
 
 const headings = await readAllLines('Headings.txt');
 headings.forEach((h) => {
@@ -147,25 +170,52 @@ headings.forEach((h) => {
       }
       const entries = entriesConcepto[ymKey(joinDate(y, m))];
       if (entries) {
+        let previsto = 0;
         let total = 0;
         out.log('<td><table>');
-        entries.forEach(([date, _, i]) => {
-          total += i;
-          const [_y, _m, d] = splitDate(date);
-          out.log(
-            '<tr><td>%s</td><td>%d</td></tr>',
-            d,
-            parseFloat(i).toFixed(2)
-          );
+        entries.forEach(([date, concepto, i]) => {
+          if (concepto) {
+            total += i;
+            const [_y, _m, d] = splitDate(date);
+            out.log('<tr><td>%s</td><td>%d</td></tr>', d, i.toFixed(2));
+          } else {
+            previsto = i;
+          }
         });
         if (entries.length > 1) {
-          out.log('<tr><th>Total</td><td>%d</td></tr>', total.toFixed(2));
+          out.log(
+            '<tr><th class="%s">Total</td><td>%d</td></tr>',
+            colores(total, previsto),
+            total.toFixed(2)
+          );
         }
+        if (previsto) {
+          out.log(
+            '<tr><th class="%s">Previsto</td><td>%d</td></tr>',
+            colores(total, previsto),
+            previsto.toFixed(2)
+          );
+        }
+
+        const futuro = entriesConcepto[ymKey(joinDate(y + 1, m))];
+        if (!futuro) {
+          entriesConcepto[ymKey(joinDate(y + 1, m))] = [
+            ['previsto', null, total],
+          ];
+        } else {
+          entriesConcepto[ymKey(joinDate(y + 1, m))].push([
+            'previsto',
+            null,
+            total,
+          ]);
+        }
+
         out.log('</table></td>');
       } else {
         out.log('<td></td>');
       }
     }
+    out.log('<th>%s</th>', h);
 
     out.log('</tr>');
   }
