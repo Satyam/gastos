@@ -17,17 +17,38 @@ export const readConocidos = async (fname) => {
     });
 };
 
-export const ymKey = (date) => date.slice(0, 7);
-
-export const parseSabadellDate = (ds) =>
-  ds.replace(/(\d+)\/(\d+)\/(\d+)/, (_, d, m, y) => joinDate(y, m, d));
-
-export const splitDate = (date) => date.split('-').map((p) => parseInt(p, 10));
-
-export const joinDate = (y, m, d = 1) =>
-  [
-    String(y).padStart(4, '0'),
-    String(m).padStart(2, '0'),
-    String(d).padStart(2, '0'),
-  ].join('-');
 export const logger = (fname) => new Console(fs.createWriteStream(fname));
+
+export class Fecha {
+  constructor(y, m, d = 1) {
+    if (y instanceof Date) {
+      const [y1, m1, d1] = y.toISOString().split('T')[0].split('-');
+      this.y = parseInt(y1, 10);
+      this.m = parseInt(m1, 10);
+      this.d = parseInt(d1, 10);
+    } else {
+      this.y = parseInt(y, 10);
+      this.m = parseInt(m, 10);
+      this.d = parseInt(d, 10);
+    }
+  }
+  get yyyy() {
+    return String(this.y).padStart(4, '0');
+  }
+  get mm() {
+    return String(this.m).padStart(2, '0');
+  }
+  get dd() {
+    return String(this.d).padStart(2, '0');
+  }
+  get ym() {
+    return `${this.yyyy}-${this.mm}`;
+  }
+  toString() {
+    return `${this.yyyy}-${this.mm}-${this.dd}`;
+  }
+  static fromSabadell(fecha) {
+    const [d, m, y] = fecha.split('/');
+    return new Fecha(y, m, d);
+  }
+}

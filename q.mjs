@@ -1,13 +1,5 @@
 #!/usr/bin/env zx
-import {
-  joinDate,
-  logger,
-  readAllLines,
-  readConocidos,
-  splitDate,
-  ymKey,
-  parseSabadellDate,
-} from './utils.mjs';
+import { Fecha, logger, readAllLines, readConocidos } from './utils.mjs';
 
 let startDate = '9999-99-99',
   endDate = '0000-00-00';
@@ -17,7 +9,7 @@ const readMovimientos = async (fname) => {
   return fileContents
     .map((row) => {
       const [d, c, _, i, s] = row.split('|');
-      const date = parseSabadellDate(d);
+      const date = Fecha.fromSabadell(d);
       if (date < startDate) startDate = date;
       if (date > endDate) endDate = date;
       return [date, c.toUpperCase().trim(), parseFloat(i), parseFloat(s)];
@@ -38,7 +30,7 @@ const movHashByYearMonth = (movimientos) => {
   movimientos.forEach((row) => {
     const [date, concepto] = row;
 
-    const ym = ymKey(date);
+    const ym = date.ym;
     if (!(ym in hash)) {
       hash[ym] = {};
     }
@@ -76,7 +68,7 @@ const movHashByConcepto = (movimientos) => {
     }
     if (!(short in hash)) hash[short] = {};
     const entry = hash[short];
-    const ym = ymKey(date);
+    const ym = date.ym;
     if (ym in entry) {
       entry[ym].push(row);
     } else {
@@ -126,8 +118,11 @@ out.log(`<html>
   </head>
   <body>
   <table>`);
-const [startY, startM] = splitDate(startDate);
-const [endY, endM] = splitDate(endDate);
+
+const startY = startDate.y,
+  startM = startDate.m;
+const endY = endDate.y,
+  endM = endDate.m;
 
 let numCols = 2;
 out.log('<tr><td></td>');
@@ -138,7 +133,7 @@ for (let y = startY, m = startM; y <= endY || m <= endM; m++) {
     if (y > endY) break;
   }
   numCols++;
-  out.log('<th>%s</th>', ymKey(joinDate(y, m)));
+  out.log('<th>%s</th>', new Fecha(y, m).ym);
 }
 out.log('</tr>');
 
@@ -168,7 +163,7 @@ headings.forEach((h) => {
         y++;
         if (y > endY) break;
       }
-      const entries = entriesConcepto[ymKey(joinDate(y, m))];
+      const entries = entriesConcepto[new Fecha(y, m).ym];
       if (entries) {
         let previsto = 0;
         let total = 0;
@@ -176,8 +171,7 @@ headings.forEach((h) => {
         entries.forEach(([date, concepto, i]) => {
           if (concepto) {
             total += i;
-            const [_y, _m, d] = splitDate(date);
-            out.log('<tr><td>%s</td><td>%d</td></tr>', d, i.toFixed(2));
+            out.log('<tr><td>%s</td><td>%d</td></tr>', date.d, i.toFixed(2));
           } else {
             previsto = i;
           }
@@ -197,17 +191,12 @@ headings.forEach((h) => {
           );
         }
 
-        const futuro = entriesConcepto[ymKey(joinDate(y + 1, m))];
+        const ym = new Fecha(y + 1, m).ym;
+        const futuro = entriesConcepto[ym];
         if (!futuro) {
-          entriesConcepto[ymKey(joinDate(y + 1, m))] = [
-            ['previsto', null, total],
-          ];
+          entriesConcepto[ym] = [['previsto', null, total]];
         } else {
-          entriesConcepto[ymKey(joinDate(y + 1, m))].push([
-            'previsto',
-            null,
-            total,
-          ]);
+          entriesConcepto[ym].push(['previsto', null, total]);
         }
 
         out.log('</table></td>');
