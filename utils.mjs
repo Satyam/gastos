@@ -21,7 +21,11 @@ export const logger = (fname) => new Console(fs.createWriteStream(fname));
 
 export class Fecha {
   constructor(y, m, d = 1) {
-    if (y instanceof Date) {
+    if (y instanceof Fecha) {
+      this.y = y.y;
+      this.m = y.m;
+      this.d = y.d;
+    } else if (y instanceof Date) {
       const [y1, m1, d1] = y.toISOString().split('T')[0].split('-');
       this.y = parseInt(y1, 10);
       this.m = parseInt(m1, 10);
@@ -30,6 +34,17 @@ export class Fecha {
       this.y = parseInt(y, 10);
       this.m = parseInt(m, 10);
       this.d = parseInt(d, 10);
+    }
+    this.#normalize();
+  }
+  #normalize() {
+    while (this.m > 12) {
+      this.y++;
+      this.m -= 12;
+    }
+    while (this.m < 1) {
+      this.y;
+      this.m += 12;
     }
   }
   get yyyy() {
@@ -46,6 +61,32 @@ export class Fecha {
   }
   toString() {
     return `${this.yyyy}-${this.mm}-${this.dd}`;
+  }
+  addMonths(m) {
+    this.m += m;
+    this.#normalize();
+  }
+  addYears(y) {
+    this.y += y;
+  }
+  nextMonth() {
+    return new Fecha(this.y, this.m + 1);
+  }
+  nextYear() {
+    return new Fecha(this.y + 1, this.m);
+  }
+  loopUntil(cb, y, m) {
+    if (y instanceof Fecha) {
+      m = y.m;
+      y = y.y;
+    }
+    for (
+      const f = new Fecha(this);
+      f.y < y || (f.y == y && f.m <= m);
+      f.addMonths(1)
+    ) {
+      cb(f);
+    }
   }
   static fromSabadell(fecha) {
     const [d, m, y] = fecha.split('/');

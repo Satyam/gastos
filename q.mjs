@@ -126,15 +126,11 @@ const endY = endDate.y,
 
 let numCols = 2;
 out.log('<tr><td></td>');
-for (let y = startY, m = startM; y <= endY || m <= endM; m++) {
-  if (m > 12) {
-    m = 1;
-    y++;
-    if (y > endY) break;
-  }
+
+startDate.loopUntil((f) => {
   numCols++;
-  out.log('<th>%s</th>', new Fecha(y, m).ym);
-}
+  out.log('<th>%s</th>', f.ym);
+}, endDate);
 out.log('</tr>');
 
 const colores = (total, previsto) => {
@@ -157,13 +153,8 @@ headings.forEach((h) => {
     const entriesConcepto = hash[h];
     out.log('<tr><th>%s</th>', h);
 
-    for (let y = startY, m = startM; y <= endY || m <= endM; m++) {
-      if (m > 12) {
-        m = 1;
-        y++;
-        if (y > endY) break;
-      }
-      const entries = entriesConcepto[new Fecha(y, m).ym];
+    startDate.loopUntil((f) => {
+      const entries = entriesConcepto[f.ym];
       if (entries) {
         let previsto = 0;
         let total = 0;
@@ -191,7 +182,7 @@ headings.forEach((h) => {
           );
         }
 
-        const ym = new Fecha(y + 1, m).ym;
+        const ym = f.nextYear().ym;
         const futuro = entriesConcepto[ym];
         if (!futuro) {
           entriesConcepto[ym] = [['previsto', null, total]];
@@ -203,7 +194,7 @@ headings.forEach((h) => {
       } else {
         out.log('<td></td>');
       }
-    }
+    }, endDate);
     out.log('<th>%s</th>', h);
 
     out.log('</tr>');
