@@ -36,6 +36,7 @@ function onOpen() {
 }
 */
 
+// Installed as trigger for onOpen method in Triggers tab
 function mostrarArchivos() {
   const arch = sh.archivos;
   arch.clear();
@@ -65,6 +66,7 @@ function mostrarArchivos() {
   sSheet.toast('Listo', '', 1);
 }
 
+// Installed as onEdit installable trigger on the Triggers tab.
 function leerArchivo(ev) {
   const r = ev.range;
   if (
