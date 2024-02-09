@@ -3,6 +3,20 @@ The functions in this file are configured to respond to installable trigger
 set in the Tirggers tab in the appScript editor.
 */
 
+function listFiles() {
+  const folders = DriveApp.getFoldersByName('Gastos');
+  const textFiles = [];
+  while (folders.hasNext()) {
+    const folder = folders.next();
+    const files = folder.getFilesByType(MimeType.PLAIN_TEXT);
+    while (files.hasNext()) {
+      textFiles.push(files.next());
+      // Logger.log(file.getId() + ' - ' + file.getName() + ' - ' + file.getSize())
+    }
+  }
+  return textFiles;
+}
+
 // Installed as callback for onOpen trigger.
 
 function mostrarArchivos() {
@@ -46,14 +60,9 @@ function leerArchivo(ev) {
     sSheet.toast(
       `Leyendo archivo ${sh.archivos.getRange(r.getRow(), 2).getValue()}`
     );
-    const content = DriveApp.getFileById(
+    procesarArchivo(
+      //'17JVWepuYC6CESa6flcayB04cWlXNQqvn'
       sh.archivos.getRange(r.getRow(), 1).getValue()
-    )
-      .getBlob()
-      .getDataAsString()
-      .split('\n');
-    sh.archivos
-      .getRange(10, 2, content.length, 1)
-      .setValues(content.map((c) => [c]));
+    );
   }
 }

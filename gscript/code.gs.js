@@ -1,41 +1,27 @@
-const getImportado = () =>
-  SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Importado');
-const getHistorico = () =>
-  SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Histórico');
-const getConocidos = () =>
-  SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Conocidos');
-const getTotales = () =>
-  SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Totales');
-const getArchivos = () =>
-  SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Archivos');
-
-function listFiles() {
-  const folders = DriveApp.getFoldersByName('Gastos');
-  const textFiles = [];
-  while (folders.hasNext()) {
-    const folder = folders.next();
-    const files = folder.getFilesByType(MimeType.PLAIN_TEXT);
-    while (files.hasNext()) {
-      textFiles.push(files.next());
-      // Logger.log(file.getId() + ' - ' + file.getName() + ' - ' + file.getSize())
-    }
+/*class Sample {
+  [Symbol.toPrimitive](hint) {
+    Logger.log('symbol')
+    return `${a}-${b}`;
   }
-  return textFiles;
+  constructor(a, b) {
+    this.a = a;
+    this.b = b;
+  }
+  toString() {
+    Logger.log('toString')
+    return `${a}-${b}`;
+  }
+  valueOf() {
+    Logger.log('valueOf')
+    return `${a}-${b}`;
+  }
 }
 
-/*
-function onOpen() {
-  ui
-    .createMenu('Mi Menú')
-    .addItem('qq','qq')
-    .addItem('mostrar','mostrar')
-    .addItem('Importar', 'importar')
-    .addItem('Sumario', 'sumario')
-    .addToUi();
-
+function test() {
+  const sample = new Sample(1, 2);
+  SpreadsheetApp.getActiveSpreadsheet().getActiveSheet().getRange(1, 7).setValue(sample)
 }
 */
-
 function uniqueConceptos() {
   const importado = getImportado();
   const muestra =
@@ -56,6 +42,72 @@ function uniqueConceptos() {
   const sorted = Object.entries(conceptos).sort((a, b) => b[1] - a[1]);
 
   muestra.getRange(1, 1, sorted.length, 2).setValues(sorted);
+}
+
+function qq() {
+  Logger.log(
+    filterNewRows(
+      readMovimientos(`24/12/2023|BONIFIC. COMISION MANTENIMIENTO|24/12/2023|50.00|1200.00||
+24/12/2023|INTERESES Y/O COMISIONES|24/12/2023|-60.00|1150.00||
+18/12/2023|PAGO BIZUM CAROLINA PATRICIA FALCONE|18/12/2023|-30.00|1210.00||593550867514
+11/12/2023|ELECTRICIDAD ENERGIA XXI ENERGIA XXI FACTU|11/12/2023|-29.52|1240.00|B82846825070|040043563056
+07/12/2023|TELEFONOS TELEFONICA DE ESPANA SAU FIJOxxxxxxxxx.dic|07/12/2023|-127.90|1269.52|A82018474002|X00112719817
+04/12/2023|IMPUESTOS AJUNTAMENT DE BARCELONA|04/12/2023|-105.46|1397.42|P0801900B001|01266888J   0658
+`)
+    )
+  );
+}
+
+let startDate = new Fecha(9999, 12, 30),
+  endDate = new Fecha(1, 1, 1);
+
+const readMovimientos = (movs) =>
+  movs
+    .trim()
+    .split('\n')
+    .map((row) => {
+      const [d, c, _, i, s] = row.split('|');
+      const fecha = Fecha.fromSabadell(d);
+      if (fecha < startDate) startDate = fecha;
+      if (fecha > endDate) endDate = fecha;
+      return [fecha, c.toUpperCase().trim(), parseFloat(i), parseFloat(s)];
+    })
+    .reverse();
+
+const filterNewRows = (movs) => {
+  const lastHistoryRow = sh.historico.getLastRow();
+  if (lastHistoryRow === 1) return movs;
+  const historico = sh.historico.getRange(1, 1, lastHistoryRow, 4).getValues();
+  const h1 = sh.historico.getDataRange().getValues();
+  const lastYMD = historico.at(-1)[0];
+  const ultimos = historico.filter((row) => row[0] === lastYMD);
+  const lastFecha = new Fecha(lastYMD);
+  return movs.filter(([f, c, i, s], index) => {
+    const fDiff = f.compare(lastFecha);
+    if (fDiff > 0) return true;
+    if (fDiff < 0) return false;
+    return !ultimos.some(([f1, c1, i1, s1]) => {
+      return c === c1 && i === i1 && s === s1;
+    });
+  });
+};
+
+function procesarArchivo(id) {
+  const contents = DriveApp.getFileById(id).getBlob().getDataAsString();
+  const movs = readMovimientos(contents);
+
+  const newMovs = filterNewRows(movs);
+  if (newMovs.length === 0) {
+    sSheet.toast('No hay movimientos nuevos que agregar', '', 15);
+    return;
+  }
+  sh.archivos
+    .getRange(1, 7, newMovs.length, 4)
+    .setValues(newMovs.map(([f, ...rest]) => [f.toDate(), ...rest]));
+  newMovs.forEach(([f, ...rest]) =>
+    sh.historico.appendRow([f.toDate(), ...rest])
+  );
+  sSheet.toast('Listo');
 }
 
 function importar() {
