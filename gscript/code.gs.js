@@ -1,65 +1,14 @@
-/*class Sample {
-  [Symbol.toPrimitive](hint) {
-    Logger.log('symbol')
-    return `${a}-${b}`;
-  }
-  constructor(a, b) {
-    this.a = a;
-    this.b = b;
-  }
-  toString() {
-    Logger.log('toString')
-    return `${a}-${b}`;
-  }
-  valueOf() {
-    Logger.log('valueOf')
-    return `${a}-${b}`;
-  }
-}
-
-function test() {
-  const sample = new Sample(1, 2);
-  SpreadsheetApp.getActiveSpreadsheet().getActiveSheet().getRange(1, 7).setValue(sample)
-}
-*/
-function uniqueConceptos() {
-  const importado = getImportado();
-  const muestra =
-    SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Muestra');
-  muestra.clear();
-  const range = importado.getRange('b:b');
-  const lastRow = range.getLastRow();
-  const values = range.getValues();
-  const conceptos = {};
-  for (let row = 0; row < lastRow; row++) {
-    const c = values[row][0];
-    if (c in conceptos) {
-      conceptos[c] += 1;
-    } else {
-      conceptos[c] = 1;
-    }
-  }
-  const sorted = Object.entries(conceptos).sort((a, b) => b[1] - a[1]);
-
-  muestra.getRange(1, 1, sorted.length, 2).setValues(sorted);
-}
-
+/*
 function qq() {
-  Logger.log(
-    filterNewRows(
-      readMovimientos(`24/12/2023|BONIFIC. COMISION MANTENIMIENTO|24/12/2023|50.00|1200.00||
+  Logger.log(filterNewRows(readMovimientos(`24/12/2023|BONIFIC. COMISION MANTENIMIENTO|24/12/2023|50.00|1200.00||
 24/12/2023|INTERESES Y/O COMISIONES|24/12/2023|-60.00|1150.00||
 18/12/2023|PAGO BIZUM CAROLINA PATRICIA FALCONE|18/12/2023|-30.00|1210.00||593550867514
 11/12/2023|ELECTRICIDAD ENERGIA XXI ENERGIA XXI FACTU|11/12/2023|-29.52|1240.00|B82846825070|040043563056
 07/12/2023|TELEFONOS TELEFONICA DE ESPANA SAU FIJOxxxxxxxxx.dic|07/12/2023|-127.90|1269.52|A82018474002|X00112719817
 04/12/2023|IMPUESTOS AJUNTAMENT DE BARCELONA|04/12/2023|-105.46|1397.42|P0801900B001|01266888J   0658
-`)
-    )
-  );
+`)))
 }
-
-let startDate = new Fecha(9999, 12, 30),
-  endDate = new Fecha(1, 1, 1);
+*/
 
 const readMovimientos = (movs) =>
   movs
@@ -68,8 +17,8 @@ const readMovimientos = (movs) =>
     .map((row) => {
       const [d, c, _, i, s] = row.split('|');
       const fecha = Fecha.fromSabadell(d);
-      if (fecha < startDate) startDate = fecha;
-      if (fecha > endDate) endDate = fecha;
+      //    if (fecha < startDate) startDate = fecha;
+      //    if (fecha > endDate) endDate = fecha;
       return [fecha, c.toUpperCase().trim(), parseFloat(i), parseFloat(s)];
     })
     .reverse();
@@ -78,7 +27,6 @@ const filterNewRows = (movs) => {
   const lastHistoryRow = sh.historico.getLastRow();
   if (lastHistoryRow === 1) return movs;
   const historico = sh.historico.getRange(1, 1, lastHistoryRow, 4).getValues();
-  const h1 = sh.historico.getDataRange().getValues();
   const lastYMD = historico.at(-1)[0];
   const ultimos = historico.filter((row) => row[0] === lastYMD);
   const lastFecha = new Fecha(lastYMD);
@@ -91,7 +39,86 @@ const filterNewRows = (movs) => {
     });
   });
 };
+let descHash = {};
+let startDate = new Fecha(9999, 12, 30);
+let endDate = new Fecha(1, 1, 1);
 
+function showDesconocidos() {
+  sh.desconocidos.clear();
+  const desc = Object.entries(descHash);
+  if (desc.length) {
+    sh.desconocidos
+      .getRange(1, 1, desc.length, 2)
+      .setValues(desc)
+      .sort({ column: 2, ascending: false });
+  }
+}
+
+function getHistoricoHash() {
+  descHash = {};
+  const conocidosKeys = Object.keys(conocidos);
+  return sh.historico
+    .getDataRange()
+    .getValues()
+    .reduce((hash, row) => {
+      if (!row[0]) return hash;
+      const fecha = new Fecha(row[0]);
+      if (fecha.compare(startDate) < 0) startDate = fecha;
+      if (fecha.compare(endDate) > 0) endDate = fecha;
+      const concepto = row[1];
+      const short = conocidosKeys.find((s) => concepto.includes(s));
+      if (!short) {
+        if (descHash[concepto]) {
+          descHash[concepto] += 1;
+        } else {
+          descHash[concepto] = 1;
+        }
+        return hash;
+      }
+      const heading = conocidos[short].heading;
+      if (!(heading in hash)) hash[heading] = {};
+      const entry = hash[heading];
+      const ym = fecha.ym;
+      if (ym in entry) {
+        entry[ym].push(row);
+      } else {
+        entry[ym] = [row];
+      }
+      return hash;
+    }, {});
+}
+
+const monthsArray = [];
+function generateMonthsArray() {
+  for (let f = startDate; f <= endDate; f.addMonths(1)) {
+    monthsArray.push(f.ym);
+  }
+}
+
+function showHeading(heading) {
+  sh.totales
+    .appendRow([heading.substring(2).trim(), ...monthsArray])
+    .getRange(sh.totales.getLastRow(), 1)
+    .setFontSize(20)
+    .setFontWeight('bold');
+}
+
+function generarSalida() {
+  initTables();
+  sSheet.setActiveSheet(sh.totales);
+  sh.totales.clear().autoResizeColumn(1);
+  const hash = getHistoricoHash();
+
+  showDesconocidos();
+  generateMonthsArray();
+  headings.forEach((heading) => {
+    if (heading.startsWith('-')) {
+      showHeading(heading);
+    } else {
+      sh.totales.appendRow([heading]);
+    }
+  });
+}
 function procesarArchivo(id) {
   const contents = DriveApp.getFileById(id).getBlob().getDataAsString();
   const movs = readMovimientos(contents);
@@ -107,6 +134,7 @@ function procesarArchivo(id) {
   newMovs.forEach(([f, ...rest]) =>
     sh.historico.appendRow([f.toDate(), ...rest])
   );
+  generarSalida();
   sSheet.toast('Listo');
 }
 
