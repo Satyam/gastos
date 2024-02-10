@@ -5,10 +5,9 @@ class Fecha {
       this.m = y.m;
       this.d = y.d;
     } else if (y instanceof Date) {
-      const [y1, m1, d1] = y.toISOString().split('T')[0].split('-');
-      this.y = parseInt(y1, 10);
-      this.m = parseInt(m1, 10);
-      this.d = parseInt(d1, 10);
+      this.y = y.getFullYear();
+      this.m = y.getMonth() + 1;
+      this.d = y.getDate();
     } else if (typeof m === 'undefined' && typeof y === 'string') {
       const m = Fecha._regexp.exec(y);
       if (m) {
