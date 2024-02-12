@@ -54,12 +54,12 @@ class Fecha {
     return new Date(this.y, this.m - 1, this.d);
   }
   /*  valueOf() {
-    return `${this.yyyy}-${this.mm}-${this.dd}`;
-  }
-   [Symbol.toPrimitive](hint) {
-    return `${this.yyyy}-${this.mm}-${this.dd}`;
-  }
-*/
+      return `${this.yyyy}-${this.mm}-${this.dd}`;
+    }
+     [Symbol.toPrimitive](hint) {
+      return `${this.yyyy}-${this.mm}-${this.dd}`;
+    }
+  */
   addMonths(m) {
     this.m += m;
     this._normalize();
@@ -98,6 +98,24 @@ class Fecha {
     const [d, m, y] = fecha.split('/');
     return new Fecha(y, m, d);
   }
+  static ymToString(ym) {
+    const [y, m] = ym.split('-');
+    return `'${Fecha._meses[m - 1]} / ${y}`;
+  }
 }
 
 Fecha._regexp = /(\d{2,4})\D?(\d{1,2})\D?(\d{1,2})/;
+Fecha._meses = [
+  'Ene',
+  'Feb',
+  'Mar',
+  'Abr',
+  'May',
+  'Jun',
+  'Jul',
+  'Ago',
+  'Set',
+  'Oct',
+  'Nov',
+  'Dic',
+];
