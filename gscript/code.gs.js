@@ -48,8 +48,8 @@ function showDesconocidos() {
   const desc = Object.entries(descHash);
   if (desc.length) {
     sh.desconocidos
-      .getRange(1, 1, desc.length, 2)
-      .setValues(desc)
+      .getRange(1, 1, desc.length + 1, 2)
+      .setValues([['Concepto', 'Ocurrencias'], ...desc])
       .sort({ column: 2, ascending: false });
   }
 }
@@ -96,28 +96,55 @@ function generateMonthsArray() {
 }
 
 function showHeading(heading) {
-  sh.totales
-    .appendRow([heading.substring(2).trim(), ...monthsArray])
-    .getRange(sh.totales.getLastRow(), 1)
-    .setFontSize(20)
-    .setFontWeight('bold');
+  const t = sh.totales;
+  t.appendRow([
+    heading.substring(2).trim(),
+    ...monthsArray.map(Fecha.ymToString),
+  ]);
+  t.getRange(t.getLastRow(), 1).setFontSize(16).setFontWeight('bold');
+  t.getRange(t.getLastRow(), 1, 1, t.getLastColumn())
+    .setBackground('silver')
+    .setBorder(true, true, null, null, null, null)
+    .setVerticalAlignment('middle');
+}
+
+function showCell(cargos, range) {
+  if (cargos.length) {
+    range.setValue(
+      cargos.reduce(
+        (total, [fecha, concepto, importe, saldo]) => total + importe,
+        0
+      )
+    );
+  }
 }
 
 function generarSalida() {
+  const t = sh.totales;
   initTables();
-  sSheet.setActiveSheet(sh.totales);
-  sh.totales.clear().autoResizeColumn(1);
+  sSheet.setActiveSheet(t);
+  t.clear();
   const hash = getHistoricoHash();
 
   showDesconocidos();
   generateMonthsArray();
-  headings.forEach((heading) => {
+  headings.forEach((heading, rowIndex) => {
     if (heading.startsWith('-')) {
       showHeading(heading);
     } else {
-      sh.totales.appendRow([heading]);
+      t.getRange(rowIndex + 1, 1).setValue(heading);
+      const entries = hash[heading] ?? {};
+      monthsArray.forEach((ym, colIndex) => {
+        const cargos = entries[ym] ?? [];
+        showCell(cargos, t.getRange(rowIndex + 1, colIndex + 2));
+      });
+
+      t.getRange(t.getLastRow(), 2, 1, t.getLastColumn() - 1).setNumberFormat(
+        '#0.00'
+      );
     }
   });
+  t.autoResizeColumn(1);
 }
 function procesarArchivo(id) {
   const contents = DriveApp.getFileById(id).getBlob().getDataAsString();

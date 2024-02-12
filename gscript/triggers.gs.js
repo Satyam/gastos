@@ -22,6 +22,7 @@ function listFiles() {
 function mostrarArchivos() {
   const arch = sh.archivos;
   arch.clear();
+  sSheet.setActiveSheet(arch);
   sSheet.toast('Buscando archivos en Gastos', 'Cargando...');
   const files = listFiles();
   const l = files.length;
