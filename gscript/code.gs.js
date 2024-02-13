@@ -1,3 +1,7 @@
+const BIG_FONT = 16;
+const BKG_BAND = 'lightgrey';
+const NUMBER_FORMAT = '#0.00';
+
 const readMovimientos = (movs) =>
   movs
     .trim()
@@ -28,6 +32,7 @@ const filterNewRows = (movs) => {
 let descHash = {};
 let startDate = new Fecha(9999, 12, 30);
 let endDate = new Fecha(1, 1, 1);
+const saldos = [];
 
 function showDesconocidos() {
   sh.desconocidos.clear();
@@ -42,15 +47,26 @@ function showDesconocidos() {
 
 function getHistoricoHash() {
   descHash = {};
+  let lastSaldo = 0;
+  let lastYMD = null;
   const conocidosKeys = Object.keys(conocidos);
-  return sh.historico
+  const hash = sh.historico
     .getDataRange()
     .getValues()
-    .reduce((hash, [date, concepto, importe]) => {
+    .reduce((hash, [date, concepto, importe, saldo]) => {
       if (!date) return hash;
       const fecha = new Fecha(date);
       if (fecha.compare(startDate) < 0) startDate = fecha;
       if (fecha.compare(endDate) > 0) endDate = fecha;
+      if (lastYMD) {
+        if (fecha.ym > lastYMD) {
+          lastYMD = fecha.ym;
+          saldos.push(lastSaldo);
+        }
+      } else {
+        lastYMD = fecha.ym;
+      }
+      lastSaldo = saldo;
       const short = conocidosKeys.find((s) => concepto.includes(s));
       if (!short) {
         if (descHash[concepto]) {
@@ -71,6 +87,8 @@ function getHistoricoHash() {
       }
       return hash;
     }, {});
+  saldos.push(lastSaldo);
+  return hash;
 }
 
 const monthsArray = [];
@@ -84,9 +102,9 @@ function showHeading(heading) {
     heading.substring(2).trim(),
     ...monthsArray.map(Fecha.ymToString),
   ]);
-  t.getRange(t.getLastRow(), 1).setFontSize(16);
+  t.getRange(t.getLastRow(), 1).setFontSize(BIG_FONT);
   t.getRange(t.getLastRow(), 1, 1, t.getLastColumn())
-    .setBackground('lightgrey')
+    .setBackground(BKG_BAND)
     .setBorder(true, true, null, null, null, null)
     .setVerticalAlignment('middle')
     .setFontWeight('bold')
@@ -98,13 +116,27 @@ function showCell(cargos, range) {
   if (cargos.length) {
     range
       .setValue(cargos.reduce((total, [, importe]) => total + importe, 0))
-      .setNumberFormat('#0.00')
+      .setNumberFormat(NUMBER_FORMAT)
       .setNote(
         cargos
           .map(([fecha, importe]) => `${fecha}: ${Number(importe).toFixed(2)}`)
           .join('\n')
       );
   }
+}
+
+function showSaldos() {
+  t = sh.totales;
+  const saldosRow = t.getLastRow() + 2;
+  t.getRange(saldosRow, 1)
+    .setValue('Saldos')
+    .setFontSize(BIG_FONT)
+    .setFontWeight('bold')
+    .setBackground(BKG_BAND);
+  t.getRange(saldosRow, 2, 1, saldos.length)
+    .setValues([saldos])
+    .setNumberFormat(NUMBER_FORMAT)
+    .setBackground(BKG_BAND);
 }
 
 function generarSalida() {
@@ -128,6 +160,7 @@ function generarSalida() {
       });
     }
   });
+  showSaldos();
   t.autoResizeColumn(1);
   t.setFrozenColumns(1);
 }
