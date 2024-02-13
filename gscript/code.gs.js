@@ -46,12 +46,11 @@ function getHistoricoHash() {
   return sh.historico
     .getDataRange()
     .getValues()
-    .reduce((hash, row) => {
-      if (!row[0]) return hash;
-      const fecha = new Fecha(row[0]);
+    .reduce((hash, [date, concepto, importe]) => {
+      if (!date) return hash;
+      const fecha = new Fecha(date);
       if (fecha.compare(startDate) < 0) startDate = fecha;
       if (fecha.compare(endDate) > 0) endDate = fecha;
-      const concepto = row[1];
       const short = conocidosKeys.find((s) => concepto.includes(s));
       if (!short) {
         if (descHash[concepto]) {
@@ -66,9 +65,9 @@ function getHistoricoHash() {
       const entry = hash[heading];
       const ym = fecha.ym;
       if (ym in entry) {
-        entry[ym].push(row);
+        entry[ym].push([fecha, importe]);
       } else {
-        entry[ym] = [row];
+        entry[ym] = [[fecha, importe]];
       }
       return hash;
     }, {});
@@ -76,9 +75,7 @@ function getHistoricoHash() {
 
 const monthsArray = [];
 function generateMonthsArray() {
-  for (let f = startDate; f <= endDate; f.addMonths(1)) {
-    monthsArray.push(f.ym);
-  }
+  startDate.loopUntilMonth((f) => monthsArray.push(f.ym), endDate);
 }
 
 function showHeading(heading) {
@@ -87,21 +84,26 @@ function showHeading(heading) {
     heading.substring(2).trim(),
     ...monthsArray.map(Fecha.ymToString),
   ]);
-  t.getRange(t.getLastRow(), 1).setFontSize(16).setFontWeight('bold');
+  t.getRange(t.getLastRow(), 1).setFontSize(16);
   t.getRange(t.getLastRow(), 1, 1, t.getLastColumn())
-    .setBackground('silver')
+    .setBackground('lightgrey')
     .setBorder(true, true, null, null, null, null)
-    .setVerticalAlignment('middle');
+    .setVerticalAlignment('middle')
+    .setFontWeight('bold')
+    .offset(0, 1)
+    .setHorizontalAlignment('center');
 }
 
 function showCell(cargos, range) {
   if (cargos.length) {
-    range.setValue(
-      cargos.reduce(
-        (total, [fecha, concepto, importe, saldo]) => total + importe,
-        0
-      )
-    );
+    range
+      .setValue(cargos.reduce((total, [, importe]) => total + importe, 0))
+      .setNumberFormat('#0.00')
+      .setNote(
+        cargos
+          .map(([fecha, importe]) => `${fecha}: ${Number(importe).toFixed(2)}`)
+          .join('\n')
+      );
   }
 }
 
@@ -109,7 +111,7 @@ function generarSalida() {
   const t = sh.totales;
   initTables();
   sSheet.setActiveSheet(t);
-  t.clear();
+  t.clear().clearNotes();
   const hash = getHistoricoHash();
 
   showDesconocidos();
@@ -124,13 +126,10 @@ function generarSalida() {
         const cargos = entries[ym] ?? [];
         showCell(cargos, t.getRange(rowIndex + 1, colIndex + 2));
       });
-
-      t.getRange(t.getLastRow(), 2, 1, t.getLastColumn() - 1).setNumberFormat(
-        '#0.00'
-      );
     }
   });
   t.autoResizeColumn(1);
+  t.setFrozenColumns(1);
 }
 
 function procesarArchivo(id) {
