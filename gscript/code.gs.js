@@ -11,7 +11,7 @@ const readMovimientos = (movs) =>
 
 const filterNewRows = (movs) => {
   const lastHistoryRow = sh.historico.getLastRow();
-  if (lastHistoryRow === 1) return movs;
+  if (lastHistoryRow === 0) return movs;
   const historico = sh.historico.getRange(1, 1, lastHistoryRow, 4).getValues();
   const lastYMD = historico.at(-1)[0];
   const ultimos = historico.filter((row) => row[0] === lastYMD);
@@ -141,12 +141,10 @@ function procesarArchivo(id) {
     sSheet.toast('No hay movimientos nuevos que agregar', '', 15);
     return;
   }
-  sh.archivos
-    .getRange(1, 7, newMovs.length, 4)
+  sh.historico
+    .getRange(sh.historico.getLastRow() + 1, 1, newMovs.length, 4)
     .setValues(newMovs.map(([f, ...rest]) => [f.toDate(), ...rest]));
-  newMovs.forEach(([f, ...rest]) =>
-    sh.historico.appendRow([f.toDate(), ...rest])
-  );
+  sSheet.toast('Generando salidas');
   generarSalida();
   sSheet.toast('Listo');
 }
