@@ -39,9 +39,15 @@ function showDesconocidos() {
   const desc = Object.entries(descHash);
   if (desc.length) {
     sh.desconocidos
-      .getRange(1, 1, desc.length + 1, 2)
-      .setValues([['Concepto', 'Ocurrencias'], ...desc])
-      .sort({ column: 2, ascending: false });
+      .getRange(1, 1, desc.length + 1, 3)
+      .setValues([
+        ['Concepto', 'Ocurrencias', 'Total'],
+        ...desc.map(([concepto, info]) => [concepto, info.cant, info.importe]),
+      ])
+      .sort([
+        { column: 3, ascending: false },
+        { column: 2, ascending: false },
+      ]);
   }
 }
 
@@ -70,9 +76,10 @@ function getHistoricoHash() {
       const short = conocidosKeys.find((s) => concepto.includes(s));
       if (!short) {
         if (descHash[concepto]) {
-          descHash[concepto] += 1;
+          descHash[concepto].cant += 1;
+          descHash[concepto].importe += importe;
         } else {
-          descHash[concepto] = 1;
+          descHash[concepto] = { cant: 1, importe };
         }
         return hash;
       }
@@ -163,10 +170,13 @@ function generarSalida() {
   showSaldos();
   t.autoResizeColumn(1);
   t.setFrozenColumns(1);
+  t.getRange(1, t.getLastColumn()).activateAsCurrentCell();
 }
 
 function procesarArchivo(id) {
-  const contents = DriveApp.getFileById(id).getBlob().getDataAsString();
+  const contents = DriveApp.getFileById(id)
+    .getBlob()
+    .getDataAsString('ISO-8859-1');
   const movs = readMovimientos(contents);
 
   const newMovs = filterNewRows(movs);
