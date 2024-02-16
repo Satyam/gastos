@@ -20,63 +20,12 @@ function listFiles() {
 // Installed as callback for onOpen trigger.
 
 function mostrarArchivos() {
-  const files = listFiles();
-
+  const h = sh.historico;
+  sSheet.setActiveSheet(h);
+  h.getRange(1, h.getLastColumn() || 1).activateAsCurrentCell();
   sSheet.toast('Buscando archivos en Gastos', 'Cargando...');
-  const htmlOutput = HtmlService.createHtmlOutput(`<!DOCTYPE html>
-<html>
-  <head>
-    <base target="_top" />
-    <style>
-      table {
-        width: 100%;
-      }
-      td {
-        padding: 1rem;
-      }
-      .size {
-        text-align: right;
-      }
-      .date {
-        text-align: center;
-      }
-    </style>
-  </head>
-  <body>
-    <table>
-      <tr>
-        <th>Nombre</th>
-        <th>Tamaño (bytes)</th>
-        <th>Fecha de creación</th>
-      </tr>
-      ${files
-        .map(
-          (file) => `
-      <tr>
-        <td>
-          <a href="#${file.getId()}" onclick="send()">${file.getName()}</a>
-        </td>
-        <td class="size">${file.getSize()}</td>
-        <td class="date">${file.getDateCreated().toLocaleDateString()}</td>
-      </tr>
-      `
-        )
-        .join('\n')}
-    </table>
-    <script>
-      document.querySelectorAll('a').forEach((aEl) =>
-        aEl.addEventListener('click', (ev) => {
-          ev.preventDefault();
-          google.script.run
-            .withSuccessHandler(() => google.script.host.close())
-            .procesarArchivo(
-              ev.currentTarget.getAttribute('href').substring(1)
-            );
-        })
-      );
-    </script>
-  </body>
-</html>
-`);
-  ui.showModalDialog(htmlOutput, 'Seleccionar Archivo');
+  ui.showModalDialog(
+    HtmlService.createTemplateFromFile('fileSelect').evaluate(),
+    'Seleccionar Archivo'
+  );
 }

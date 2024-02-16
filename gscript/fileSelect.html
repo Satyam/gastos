@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top" />
+    <style>
+      table {
+        width: 100%;
+      }
+
+      td {
+        padding: 1rem;
+      }
+
+      .size {
+        text-align: right;
+      }
+
+      .date {
+        text-align: center;
+      }
+    </style>
+  </head>
+
+  <body>
+    <table>
+      <tr>
+        <th>Nombre</th>
+        <th>Tamaño (bytes)</th>
+        <th>Fecha de creación</th>
+      </tr>
+      <? for (const file of listFiles()) { ?>
+      <tr>
+        <td>
+          <a href="#<?= file.getId() ?>">
+            <?= file.getName() ?>
+          </a>
+        </td>
+        <td class="size">
+          <?= file.getSize() ?>
+        </td>
+        <td class="date">
+          <?= file.getDateCreated().toLocaleDateString() ?>
+        </td>
+      </tr>
+      <? } ?>
+    </table>
+    <script>
+      document.querySelectorAll('a').forEach((aEl) =>
+        aEl.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          google.script.run
+            .withSuccessHandler(() => google.script.host.close())
+            .procesarArchivo(
+              ev.currentTarget.getAttribute('href').substring(1)
+            );
+        })
+      );
+    </script>
+  </body>
+</html>
