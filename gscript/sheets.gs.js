@@ -1,11 +1,11 @@
 const sSheet = SpreadsheetApp.getActiveSpreadsheet();
 
 const sh = {
-  importado: sSheet.getSheetByName('Importado'),
   historico: sSheet.getSheetByName('Histórico'),
   conocidos: sSheet.getSheetByName('Conocidos'),
   totales: sSheet.getSheetByName('Totales'),
-  archivos: sSheet.getSheetByName('Archivos'),
+  headings: sSheet.getSheetByName('Encabezados'),
+  desconocidos: sSheet.getSheetByName('Desconocidos'),
 };
 
 const ui = SpreadsheetApp.getUi();
