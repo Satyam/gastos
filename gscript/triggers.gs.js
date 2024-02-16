@@ -20,50 +20,63 @@ function listFiles() {
 // Installed as callback for onOpen trigger.
 
 function mostrarArchivos() {
-  const arch = sh.archivos;
-  arch.clear();
-  sSheet.setActiveSheet(arch);
-  sSheet.toast('Buscando archivos en Gastos', 'Cargando...');
   const files = listFiles();
-  const l = files.length;
-  arch
-    .getRange(1, 1, 1, 5)
-    .setValues([['Id', 'Archivo', 'Tamaño', 'Fecha', '👇']])
-    .setFontWeight('bold')
-    .setFontSize(12);
-  arch.getRange(1, 5).setNote('Seleccionar el archivo a importar');
-  arch.getRange(1, 5, l + 1, 1).setHorizontalAlignment('center');
-  arch
-    .getRange(2, 1, l, 4)
-    .setValues(
-      files.map((file) => [
-        file.getId(),
-        file.getName(),
-        file.getSize(),
-        file.getDateCreated(),
-      ])
-    );
-  arch.getRange(2, 5, l, 1).insertCheckboxes();
-  arch.hideColumn(arch.getRange(1, 1));
-  arch.autoResizeColumns(1, 5);
-  sSheet.toast('Listo', '', 1);
-}
 
-// Installed as callback for onEdit trigger
-
-function leerArchivo(ev) {
-  const r = ev.range;
-  if (
-    r.getColumn() === 5 &&
-    r.getSheet().getSheetId() === sh.archivos.getSheetId() &&
-    r.isChecked()
-  ) {
-    sSheet.toast(
-      `Leyendo archivo ${sh.archivos.getRange(r.getRow(), 2).getValue()}`
-    );
-    procesarArchivo(
-      //'17JVWepuYC6CESa6flcayB04cWlXNQqvn'
-      sh.archivos.getRange(r.getRow(), 1).getValue()
-    );
-  }
+  sSheet.toast('Buscando archivos en Gastos', 'Cargando...');
+  const htmlOutput = HtmlService.createHtmlOutput(`<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top" />
+    <style>
+      table {
+        width: 100%;
+      }
+      td {
+        padding: 1rem;
+      }
+      .size {
+        text-align: right;
+      }
+      .date {
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <table>
+      <tr>
+        <th>Nombre</th>
+        <th>Tamaño (bytes)</th>
+        <th>Fecha de creación</th>
+      </tr>
+      ${files
+        .map(
+          (file) => `
+      <tr>
+        <td>
+          <a href="#${file.getId()}" onclick="send()">${file.getName()}</a>
+        </td>
+        <td class="size">${file.getSize()}</td>
+        <td class="date">${file.getDateCreated().toLocaleDateString()}</td>
+      </tr>
+      `
+        )
+        .join('\n')}
+    </table>
+    <script>
+      document.querySelectorAll('a').forEach((aEl) =>
+        aEl.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          google.script.run
+            .withSuccessHandler(() => google.script.host.close())
+            .procesarArchivo(
+              ev.currentTarget.getAttribute('href').substring(1)
+            );
+        })
+      );
+    </script>
+  </body>
+</html>
+`);
+  ui.showModalDialog(htmlOutput, 'Seleccionar Archivo');
 }

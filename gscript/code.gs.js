@@ -174,9 +174,12 @@ function generarSalida() {
 }
 
 function procesarArchivo(id) {
-  const contents = DriveApp.getFileById(id)
-    .getBlob()
-    .getDataAsString('ISO-8859-1');
+  const h = sh.historico;
+  h.getRange(1, h.getLastColumn()).activateAsCurrentCell();
+  sSheet.setActiveSheet(h);
+  const file = DriveApp.getFileById(id);
+  sSheet.toast(`Leyendo archivo ${file.getName()}`);
+  const contents = file.getBlob().getDataAsString('ISO-8859-1');
   const movs = readMovimientos(contents);
 
   const newMovs = filterNewRows(movs);
@@ -184,9 +187,9 @@ function procesarArchivo(id) {
     sSheet.toast('No hay movimientos nuevos que agregar', '', 15);
     return;
   }
-  sh.historico
-    .getRange(sh.historico.getLastRow() + 1, 1, newMovs.length, 4)
-    .setValues(newMovs.map(([f, ...rest]) => [f.toDate(), ...rest]));
+  h.getRange(h.getLastRow() + 1, 1, newMovs.length, 4).setValues(
+    newMovs.map(([f, ...rest]) => [f.toDate(), ...rest])
+  );
   sSheet.toast('Generando salidas');
   generarSalida();
   sSheet.toast('Listo');
