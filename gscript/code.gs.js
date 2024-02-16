@@ -83,7 +83,7 @@ function getHistoricoHash() {
         }
         return hash;
       }
-      const heading = conocidos[short].heading;
+      const heading = conocidos[short];
       if (!(heading in hash)) hash[heading] = {};
       const entry = hash[heading];
       const ym = fecha.ym;
@@ -155,7 +155,7 @@ function generarSalida() {
 
   showDesconocidos();
   generateMonthsArray();
-  headings.forEach((heading, rowIndex) => {
+  headings.forEach(([heading], rowIndex) => {
     if (heading.startsWith('-')) {
       showHeading(heading);
     } else {
@@ -175,7 +175,7 @@ function generarSalida() {
 
 function procesarArchivo(id) {
   const h = sh.historico;
-  h.getRange(1, h.getLastColumn()).activateAsCurrentCell();
+  h.getRange(1, h.getLastColumn() || 1).activateAsCurrentCell();
   sSheet.setActiveSheet(h);
   const file = DriveApp.getFileById(id);
   sSheet.toast(`Leyendo archivo ${file.getName()}`);

@@ -1,21 +1,21 @@
 const getConocidosHash = () =>
   sh.conocidos
-    .getRange(2, 1, sh.conocidos.getLastRow(), 3)
+    .getRange(2, 1, sh.conocidos.getLastRow(), 2)
     .getValues()
     .reduce((c, row) => {
       const key = row[0].trim().toUpperCase();
       if (key.length === 0) return c;
       return {
         ...c,
-        [key]: {
-          heading: row[1] || key,
-          meses: Number(row[2]) || 1,
-        },
+        [key]: row[1] || key,
       };
     }, {});
 
 const getHeadings = () =>
-  sh.headings.getRange(1, 1, sh.headings.getLastRow(), 1).getValues().flat();
+  sh.headings
+    .getRange(2, 1, sh.headings.getLastRow(), 2)
+    .getValues()
+    .filter((row) => row[0].length);
 
 let conocidos = {};
 let headings = [];
@@ -24,23 +24,27 @@ function initTables() {
   conocidos = getConocidosHash();
   headings = getHeadings();
 
-  // Check that both tables cross-references each other.
-  const hdgs = [];
-  Object.values(conocidos).forEach(({ heading }) => {
-    hdgs.push(heading);
-    if (!headings.includes(heading)) {
+  const headingsHash = headings.reduce((hash, [heading]) => {
+    if (heading.startsWith('-')) return hash;
+    return {
+      [heading]: 0,
+      ...hash,
+    };
+  }, {});
+  Object.values(conocidos).forEach((h) => {
+    if (h in headingsHash) {
+      headingsHash[h] += 1;
+    } else {
       ui.alert(
-        `El encabezado "${heading}" en la solapa "Conocidos" no se encuentra en la solapa de "Encabezados"`
+        `El encabezado "${h}" en la solapa "Conocidos" no se encuentra en la solapa de "Encabezados"`
       );
     }
   });
-  headings
-    .filter((h) => !h.startsWith('-'))
-    .forEach((h) => {
-      if (!hdgs.includes(h)) {
-        ui.alert(
-          `No hay ninguna entrada en "Conocidos" para el encabezado "${h}"`
-        );
-      }
-    });
+  for (const [heading, qty] of Object.entries(headingsHash)) {
+    if (qty === 0) {
+      ui.alert(
+        `No hay ninguna entrada en "Conocidos" para el encabezado "${heading}"`
+      );
+    }
+  }
 }
