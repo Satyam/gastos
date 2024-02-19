@@ -18,10 +18,21 @@
       .date {
         text-align: center;
       }
+      .dialog h1 {
+        display: none;
+      }
+      .working h1 {
+        display: block;
+        text-align: center;
+      }
+      .working table {
+        display: none;
+      }
     </style>
   </head>
 
-  <body>
+  <body class="dialog">
+    <h1>Procesando</h1>
     <table>
       <tr>
         <th>Nombre</th>
@@ -48,6 +59,7 @@
       document.querySelectorAll('a').forEach((aEl) =>
         aEl.addEventListener('click', (ev) => {
           ev.preventDefault();
+          document.body.className = 'working';
           google.script.run
             .withSuccessHandler(() => google.script.host.close())
             .procesarArchivo(
