@@ -1,7 +1,7 @@
 const BIG_FONT = 16;
 const BKG_BAND = 'lightgrey';
 const ESTIMATE = 'lightpink';
-const NUMBER_FORMAT = '#0.00';
+const NUMBER_FORMAT = '#,0.00';
 const HEADING_VARIOS = 'Varios';
 
 const readMovimientos = (movs) =>
@@ -245,23 +245,58 @@ function generarSalida() {
 function generarAlquileres() {
   initTables();
   const a = sh.alquileres;
-  sSheet.setActiveSheet(a);
   a.clear().clearNotes();
+  sSheet.setActiveSheet(a);
   const h = getHistoricoHash();
   const cols = endDate.y - startDate.y + 1;
-  const alqs = Array(12).fill(Array(cols));
+  // Alquileres;
+  const alqs = Array(12);
+  const notes = Array(12);
+  for (let row = 0; row < 12; row++) {
+    alqs[row] = Array(cols);
+    notes[row] = Array(cols);
+  }
 
   for (const [ym, entries] of Object.entries(h['Pago alquiler GG'])) {
     const [y, m] = ym.split('-');
     const col = parseInt(y, 10) - startDate.y;
     const row = parseInt(m, 10) - 1;
-    alqs[row][col] = entries.reduce(
-      (total, [f, importe]) => total + importe,
-      0
-    );
+    for (const [fecha, importe] of entries) {
+      alqs[row][col] = (alqs[row][col] ?? 0) + importe;
+      notes[row][col] = `${notes[row][col] ?? ''}${fecha.toString()}: ${Number(
+        importe
+      ).toFixed(2)}\n`;
+    }
   }
-  console.log(JSON.stringify(alqs, null, 2));
-  a.getRange(2, 2, 12, cols).setValues(alqs);
+  a.getRange(3, 2, 12, cols)
+    .setValues(alqs)
+    .setNotes(notes)
+    .setNumberFormat(NUMBER_FORMAT);
+  const años = Array(cols);
+  for (let i = 0; i < cols; i++) {
+    años[i] = String(startDate.y + i).padStart(4, '0');
+  }
+  a.getRange(1, 2, 1, cols)
+    .setValues([años])
+    .setFontSize(BIG_FONT)
+    .setFontWeight('bold');
+  a.getRange(2, 1, 1, 1)
+    .setValue([['Alquileres']])
+    .setFontSize(BIG_FONT)
+    .setFontWeight('bold');
+  const meses = Array(12);
+  for (let i = 0; i < 12; i++) {
+    meses[i] = [Fecha._meses[i]];
+  }
+  a.getRange(3, 1, 12, 1)
+    .setValues(meses)
+    .setFontSize(BIG_FONT)
+    .setFontWeight('bold');
+  a.getRange(a.getLastRow() + 1, 2, 1, cols)
+    .setFormulasR1C1([Array(cols).fill('=sum(R[-12]C:R[-1]C)')])
+    .setFontWeight('bold')
+    .setNumberFormat(NUMBER_FORMAT)
+    .setBorder(true, null, null, null, false, false);
 }
 
 function procesarArchivo(id) {
