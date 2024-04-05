@@ -18,7 +18,14 @@ function listFiles() {
 }
 
 // Installed as callback for onOpen trigger.
-
+function AddMenu() {
+  ui.createMenu('Mi Menu')
+    .addItem('Mostrar Archivos', 'mostrarArchivos')
+    .addItem('Generar Salida', 'generarSalida')
+    .addItem('Generar Alquileres', 'generarAlquileres')
+    .addToUi();
+}
+// Installed as callback for onOpen trigger.
 function mostrarArchivos() {
   const h = sh.historico;
   sSheet.setActiveSheet(h);

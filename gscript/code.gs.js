@@ -1,6 +1,8 @@
 const BIG_FONT = 16;
 const BKG_BAND = 'lightgrey';
+const ESTIMATE = 'lightpink';
 const NUMBER_FORMAT = '#0.00';
+const HEADING_VARIOS = 'Varios';
 
 const readMovimientos = (movs) =>
   movs
@@ -30,9 +32,12 @@ const filterNewRows = (movs) => {
   });
 };
 let descHash = {};
+let hashCache = null;
 let startDate = new Fecha(9999, 12, 30);
 let endDate = new Fecha(1, 1, 1);
 const saldos = [];
+const saldoTarjeta = [];
+const saldoAlquiler = [];
 
 function showDesconocidos() {
   sh.desconocidos.clear();
@@ -51,17 +56,36 @@ function showDesconocidos() {
   }
 }
 
+const findHeading = (concepto) =>
+  conocidos[Object.keys(conocidos).find((s) => concepto.includes(s))] ??
+  HEADING_VARIOS;
+
 function getHistoricoHash() {
+  if (hashCache) return hashCache;
   descHash = {};
   let lastSaldo = 0;
   let lastYMD = null;
-  const conocidosKeys = Object.keys(conocidos);
-  const hash = sh.historico
+  hashCache = sh.historico
     .getDataRange()
     .getValues()
     .reduce((hash, [date, concepto, importe, saldo]) => {
       if (!date) return hash;
       const fecha = new Fecha(date);
+
+      const addToHash = (heading, i = importe) => {
+        if (!(heading in hash)) hash[heading] = {};
+        const entry = hash[heading];
+        const ym = fecha.ym;
+        if (ym in entry) {
+          entry[ym].push([fecha, i]);
+        } else {
+          entry[ym] = [[fecha, i]];
+        }
+        if (heading == HEADING_VARIOS) {
+          entry[ym].at(-1).push(concepto);
+        }
+      };
+
       if (fecha.compare(startDate) < 0) startDate = fecha;
       if (fecha.compare(endDate) > 0) endDate = fecha;
       if (lastYMD) {
@@ -72,30 +96,30 @@ function getHistoricoHash() {
       } else {
         lastYMD = fecha.ym;
       }
+      prevSaldo = lastSaldo;
       lastSaldo = saldo;
-      const short = conocidosKeys.find((s) => concepto.includes(s));
-      if (!short) {
-        if (descHash[concepto]) {
-          descHash[concepto].cant += 1;
-          descHash[concepto].importe += importe;
-        } else {
-          descHash[concepto] = { cant: 1, importe };
-        }
-        return hash;
+      const heading = findHeading(concepto);
+      switch (heading) {
+        case HEADING_VARIOS:
+          if (descHash[concepto]) {
+            descHash[concepto].cant += 1;
+            descHash[concepto].importe += importe;
+          } else {
+            descHash[concepto] = { cant: 1, importe };
+          }
+          break;
+        case 'Tarjeta de Crédito':
+          addToHash('Saldo antes tarjeta', prevSaldo);
+          break;
+        case 'Pago alquiler GG':
+          addToHash('Saldo antes alquiler', prevSaldo);
+          break;
       }
-      const heading = conocidos[short];
-      if (!(heading in hash)) hash[heading] = {};
-      const entry = hash[heading];
-      const ym = fecha.ym;
-      if (ym in entry) {
-        entry[ym].push([fecha, importe]);
-      } else {
-        entry[ym] = [[fecha, importe]];
-      }
+      addToHash(heading);
       return hash;
     }, {});
   saldos.push(lastSaldo);
-  return hash;
+  return hashCache;
 }
 
 const monthsArray = [];
@@ -119,21 +143,38 @@ function showHeading(heading) {
     .setHorizontalAlignment('center');
 }
 
-function showCell(cargos, range) {
-  if (cargos.length) {
-    range
-      .setValue(cargos.reduce((total, [, importe]) => total + importe, 0))
-      .setNumberFormat(NUMBER_FORMAT)
-      .setNote(
-        cargos
-          .map(([fecha, importe]) => `${fecha}: ${Number(importe).toFixed(2)}`)
-          .join('\n')
-      );
+function showCell(cargos, rowIndex, colIndex, meses) {
+  const t = sh.totales;
+  const value = cargos.reduce((total, [, importe]) => total + importe, 0);
+  let color = 'white';
+  let estimate = '';
+  if (meses && colIndex > meses) {
+    estimate = t.getRange(rowIndex + 1, colIndex + 2 - meses).getValue();
+    if (estimate) {
+      const err = Math.abs(1 - value / estimate);
+      if (err > 0.3) color = 'red';
+      else if (err > 0.2) color = 'pink';
+      else if (err > 0.1) color = 'yellow';
+    }
   }
+  t
+    .getRange(rowIndex + 1, colIndex + 2)
+    .setValue(value)
+    .setNumberFormat(NUMBER_FORMAT)
+    .setBackground(color).setNote(`Cargos:
+${cargos
+  .map(
+    ([fecha, importe, concepto]) =>
+      `${fecha}: ${Number(importe).toFixed(2)}${
+        concepto ? `\n   ${concepto}\n` : ''
+      }`
+  )
+  .join('\n')}
+${estimate ? `Estimado: ${Number(estimate).toFixed(2)}` : ''}`);
 }
 
 function showSaldos() {
-  t = sh.totales;
+  const t = sh.totales;
   const saldosRow = t.getLastRow() + 2;
   t.getRange(saldosRow, 1)
     .setValue('Saldos')
@@ -146,6 +187,15 @@ function showSaldos() {
     .setBackground(BKG_BAND);
 }
 
+function showSumas() {
+  const t = sh.totales;
+  const len = saldos.length;
+  const sumasRow = t.getLastRow() + 2;
+  t.getRange(sumasRow, 3, 1, len - 1).setFormulasR1C1([
+    Array(len - 1).fill('=sum(R2C:R[-7]C) + R[-2]C[-1] - R[-2]C'),
+  ]);
+}
+
 function generarSalida() {
   const t = sh.totales;
   initTables();
@@ -155,22 +205,63 @@ function generarSalida() {
 
   showDesconocidos();
   generateMonthsArray();
-  headings.forEach(([heading], rowIndex) => {
+  const lastColIndex = monthsArray.length - 1;
+  headings.forEach(([heading, meses], rowIndex) => {
     if (heading.startsWith('-')) {
       showHeading(heading);
     } else {
       t.getRange(rowIndex + 1, 1).setValue(heading);
       const entries = hash[heading] ?? {};
       monthsArray.forEach((ym, colIndex) => {
-        const cargos = entries[ym] ?? [];
-        showCell(cargos, t.getRange(rowIndex + 1, colIndex + 2));
+        const cargos = entries[ym];
+        if (cargos) {
+          showCell(cargos, rowIndex, colIndex, meses);
+        } else {
+          // Logger.log({heading, meses, colIndex, lastColIndex})
+          if (colIndex === lastColIndex) {
+            if (meses) {
+              const val = t
+                .getRange(rowIndex + 1, colIndex + 2 - meses)
+                .getDisplayValue();
+              if (val) {
+                t.getRange(rowIndex + 1, colIndex + 2)
+                  .setValue(val)
+                  .setBackground(ESTIMATE);
+              }
+            }
+          }
+        }
       });
     }
   });
+
   showSaldos();
+  showSumas();
   t.autoResizeColumn(1);
   t.setFrozenColumns(1);
   t.getRange(1, t.getLastColumn()).activateAsCurrentCell();
+}
+
+function generarAlquileres() {
+  initTables();
+  const a = sh.alquileres;
+  sSheet.setActiveSheet(a);
+  a.clear().clearNotes();
+  const h = getHistoricoHash();
+  const cols = endDate.y - startDate.y + 1;
+  const alqs = Array(12).fill(Array(cols));
+
+  for (const [ym, entries] of Object.entries(h['Pago alquiler GG'])) {
+    const [y, m] = ym.split('-');
+    const col = parseInt(y, 10) - startDate.y;
+    const row = parseInt(m, 10) - 1;
+    alqs[row][col] = entries.reduce(
+      (total, [f, importe]) => total + importe,
+      0
+    );
+  }
+  console.log(JSON.stringify(alqs, null, 2));
+  a.getRange(2, 2, 12, cols).setValues(alqs);
 }
 
 function procesarArchivo(id) {

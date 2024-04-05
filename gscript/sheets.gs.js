@@ -6,6 +6,7 @@ const sh = {
   totales: sSheet.getSheetByName('Totales'),
   headings: sSheet.getSheetByName('Encabezados'),
   desconocidos: sSheet.getSheetByName('Desconocidos'),
+  alquileres: sSheet.getSheetByName('Alquileres'),
 };
 
 const ui = SpreadsheetApp.getUi();
