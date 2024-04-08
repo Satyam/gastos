@@ -44,10 +44,15 @@ function showDesconocidos() {
   const desc = Object.entries(descHash);
   if (desc.length) {
     sh.desconocidos
-      .getRange(1, 1, desc.length + 1, 3)
+      .getRange(1, 1, desc.length + 1, 4)
       .setValues([
-        ['Concepto', 'Ocurrencias', 'Total'],
-        ...desc.map(([concepto, info]) => [concepto, info.cant, info.importe]),
+        ['Concepto', 'Ocurrencias', 'Total', 'Fechas'],
+        ...desc.map(([concepto, info]) => [
+          concepto,
+          info.cant,
+          info.importe,
+          info.fechas.join(' , '),
+        ]),
       ])
       .sort([
         { column: 3, ascending: false },
@@ -104,8 +109,13 @@ function getHistoricoHash() {
           if (descHash[concepto]) {
             descHash[concepto].cant += 1;
             descHash[concepto].importe += importe;
+            descHash[concepto].fechas.push(fecha.toString());
           } else {
-            descHash[concepto] = { cant: 1, importe };
+            descHash[concepto] = {
+              cant: 1,
+              importe,
+              fechas: [fecha.toString()],
+            };
           }
           break;
         case 'Tarjeta de Crédito':
@@ -119,6 +129,7 @@ function getHistoricoHash() {
       return hash;
     }, {});
   saldos.push(lastSaldo);
+  showDesconocidos();
   return hashCache;
 }
 
@@ -127,8 +138,7 @@ function generateMonthsArray() {
   startDate.loopUntilMonth((f) => monthsArray.push(f.ym), endDate);
 }
 
-function showHeading(heading) {
-  const t = sh.totales;
+function showHeading(t, heading) {
   t.appendRow([
     heading.substring(2).trim(),
     ...monthsArray.map(Fecha.ymToString),
@@ -143,13 +153,12 @@ function showHeading(heading) {
     .setHorizontalAlignment('center');
 }
 
-function showCell(cargos, rowIndex, colIndex, meses) {
-  const t = sh.totales;
+function showCell(t, row, col, cargos, frecuencia) {
   const value = cargos.reduce((total, [, importe]) => total + importe, 0);
   let color = 'white';
   let estimate = '';
-  if (meses && colIndex > meses) {
-    estimate = t.getRange(rowIndex + 1, colIndex + 2 - meses).getValue();
+  if (frecuencia && col > frecuencia) {
+    estimate = t.getRange(row, col - frecuencia).getValue();
     if (estimate) {
       const err = Math.abs(1 - value / estimate);
       if (err > 0.3) color = 'red';
@@ -158,7 +167,7 @@ function showCell(cargos, rowIndex, colIndex, meses) {
     }
   }
   t
-    .getRange(rowIndex + 1, colIndex + 2)
+    .getRange(row, col)
     .setValue(value)
     .setNumberFormat(NUMBER_FORMAT)
     .setBackground(color).setNote(`Cargos:
@@ -173,9 +182,7 @@ ${cargos
 ${estimate ? `Estimado: ${Number(estimate).toFixed(2)}` : ''}`);
 }
 
-function showSaldos() {
-  const t = sh.totales;
-  const saldosRow = t.getLastRow() + 2;
+function showSaldos(t, saldosRow) {
   t.getRange(saldosRow, 1)
     .setValue('Saldos')
     .setFontSize(BIG_FONT)
@@ -187,58 +194,68 @@ function showSaldos() {
     .setBackground(BKG_BAND);
 }
 
-function showSumas() {
-  const t = sh.totales;
-  const len = saldos.length;
-  const sumasRow = t.getLastRow() + 2;
-  t.getRange(sumasRow, 3, 1, len - 1).setFormulasR1C1([
-    Array(len - 1).fill('=sum(R2C:R[-7]C) + R[-2]C[-1] - R[-2]C'),
-  ]);
+function addBottomFormulas(t, row, cols) {
+  t.getRange(row, 3, 1, cols - 1)
+    .setFormulasR1C1([
+      Array(cols - 1).fill('=sum(R2C:R[-7]C) + R[-2]C[-1] - R[-2]C'),
+    ])
+    .setNumberFormat(NUMBER_FORMAT);
+}
+
+function addRowFormulas(t, row, col) {
+  t.getRange(row, col, 1, 4)
+    .setFormulasR1C1([
+      [
+        '=SUM(RC[-2]:RC2)/COLUMNS(RC[-2]:RC2)',
+        '=RC[-1]* 12',
+        '=RC[1] / 12',
+        '=SUM(RC[-5]:RC[-16])',
+      ],
+    ])
+    .setNumberFormat(NUMBER_FORMAT);
 }
 
 function generarSalida() {
   const t = sh.totales;
   initTables();
   sSheet.setActiveSheet(t);
-  t.clear().clearNotes();
+  t.clear().clearNotes().setFrozenColumns(1); // warning: does not chain
+
   const hash = getHistoricoHash();
 
-  showDesconocidos();
   generateMonthsArray();
-  const lastColIndex = monthsArray.length - 1;
-  headings.forEach(([heading, meses], rowIndex) => {
+  const cols = monthsArray.length;
+  const rows = headings.length;
+  headings.forEach(([heading, frecuencia], rowIndex) => {
+    const row = rowIndex + 1;
     if (heading.startsWith('-')) {
-      showHeading(heading);
+      showHeading(t, heading);
     } else {
-      t.getRange(rowIndex + 1, 1).setValue(heading);
+      t.getRange(row, 1).setValue(heading);
       const entries = hash[heading] ?? {};
       monthsArray.forEach((ym, colIndex) => {
         const cargos = entries[ym];
+        const col = colIndex + 2;
         if (cargos) {
-          showCell(cargos, rowIndex, colIndex, meses);
+          showCell(t, row, col, cargos, frecuencia);
         } else {
-          // Logger.log({heading, meses, colIndex, lastColIndex})
-          if (colIndex === lastColIndex) {
-            if (meses) {
-              const val = t
-                .getRange(rowIndex + 1, colIndex + 2 - meses)
-                .getDisplayValue();
+          if (col === cols) {
+            if (frecuencia) {
+              const val = t.getRange(row, col - frecuencia).getDisplayValue();
               if (val) {
-                t.getRange(rowIndex + 1, colIndex + 2)
-                  .setValue(val)
-                  .setBackground(ESTIMATE);
+                t.getRange(row, col).setValue(val).setBackground(ESTIMATE);
               }
             }
           }
         }
       });
+      addRowFormulas(t, row, cols + 3);
     }
   });
 
-  showSaldos();
-  showSumas();
+  showSaldos(t, rows + 1);
+  addBottomFormulas(t, rows + 2, cols);
   t.autoResizeColumn(1);
-  t.setFrozenColumns(1);
   t.getRange(1, t.getLastColumn()).activateAsCurrentCell();
 }
 
@@ -349,6 +366,8 @@ function generarAlquileres() {
   a.getRange(row, 2, 1, cols)
     .setValues([seguro])
     .setNumberFormat(NUMBER_FORMAT);
+  a.getRange(1, 1).setValue(`Gran de Gracia 231 Pr.1ª
+9142108DF2894A0004JQ`);
   a.autoResizeColumn(1);
 }
 
