@@ -1,37 +1,40 @@
-let descHash = {};
 let hashCache = null;
 let startDate = new Fecha(9999, 12, 30);
 let endDate = new Fecha(1, 1, 1);
 const monthsArray = [];
 
-function showDesconocidos() {
-  sh.desconocidos.clear();
-  const desc = Object.entries(descHash);
-  if (desc.length) {
-    sh.desconocidos
-      .getRange(1, 1, desc.length + 1, 4)
-      .setValues([
-        ['Concepto', 'Ocurrencias', 'Total', 'Fechas'],
-        ...desc.map(([concepto, info]) => [
-          concepto,
-          info.cant,
-          info.importe,
-          info.fechas.join(' , '),
-        ]),
-      ])
-      .sort([
-        { column: 3, ascending: false },
-        { column: 2, ascending: false },
-      ]);
-  }
-}
-const findHeading = (concepto) =>
-  conocidos[Object.keys(conocidos).find((s) => concepto.includes(s))] ??
-  HEADINGS.VARIOS;
-
 function getHistoricoHash() {
   if (hashCache) return hashCache;
-  descHash = {};
+  const descHash = {};
+
+  // Private functions only used here
+  const showDesconocidos = () => {
+    sh.desconocidos.clear();
+    const desc = Object.entries(descHash);
+    if (desc.length) {
+      sh.desconocidos
+        .getRange(1, 1, desc.length + 1, 4)
+        .setValues([
+          ['Concepto', 'Ocurrencias', 'Total', 'Fechas'],
+          ...desc.map(([concepto, info]) => [
+            concepto,
+            info.cant,
+            info.importe,
+            info.fechas.join(' , '),
+          ]),
+        ])
+        .sort([
+          { column: 3, ascending: false },
+          { column: 2, ascending: false },
+        ]);
+    }
+  };
+  const findHeading = (concepto) =>
+    conocidos[Object.keys(conocidos).find((s) => concepto.includes(s))] ??
+    HEADINGS.VARIOS;
+
+  // End of private functions
+
   let lastSaldo = 0;
   let lastYMD = null;
   hashCache = sh.historico
