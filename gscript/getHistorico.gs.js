@@ -27,7 +27,7 @@ function showDesconocidos() {
 }
 const findHeading = (concepto) =>
   conocidos[Object.keys(conocidos).find((s) => concepto.includes(s))] ??
-  HEADING_VARIOS;
+  HEADINGS.VARIOS;
 
 function getHistoricoHash() {
   if (hashCache) return hashCache;
@@ -50,7 +50,7 @@ function getHistoricoHash() {
         } else {
           entry[ym] = [[fecha, i]];
         }
-        if (heading == HEADING_VARIOS) {
+        if (heading == HEADINGS.VARIOS) {
           entry[ym].at(-1).push(concepto);
         }
       };
@@ -69,7 +69,7 @@ function getHistoricoHash() {
       lastSaldo = saldo;
       const heading = findHeading(concepto);
       switch (heading) {
-        case HEADING_VARIOS:
+        case HEADINGS.VARIOS:
           if (descHash[concepto]) {
             descHash[concepto].cant += 1;
             descHash[concepto].importe += importe;
@@ -82,10 +82,10 @@ function getHistoricoHash() {
             };
           }
           break;
-        case 'Tarjeta de Crédito':
+        case HEADINGS.TARJETA:
           addToHash('Saldo antes tarjeta', prevSaldo);
           break;
-        case 'Pago alquiler GG':
+        case HEADINGS.ALQUILER_GG:
           addToHash('Saldo antes alquiler', prevSaldo);
           break;
       }

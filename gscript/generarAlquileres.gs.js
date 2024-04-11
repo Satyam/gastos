@@ -15,7 +15,7 @@ function generarAlquileres() {
       notes[row] = Array(cols);
     }
 
-    for (const [ym, entries] of Object.entries(h['Pago alquiler GG'])) {
+    for (const [ym, entries] of Object.entries(h[HEADINGS.ALQUILER_GG])) {
       const [y, m] = ym.split('-');
       const col = parseInt(y, 10) - startDate.y;
       const row = parseInt(m, 10) - 1;
@@ -80,12 +80,12 @@ function generarAlquileres() {
       .setNumberFormat(NUMBER_FORMAT)
       .setNotes([notes]);
   }
-  gastosVarios('Comunidad GG', 'Comunidad');
-  gastosVarios('IBI GG', 'IBI');
-  gastosVarios('Alquiler contador agua GG', 'Tasa Agua');
+  gastosVarios(HEADINGS.COMUNIDAD_GG, 'Comunidad');
+  gastosVarios(HEADINGS.IBI_GG, 'IBI');
+  gastosVarios(HEADINGS.CONTADOR_AGUA_GG, 'Tasa Agua');
   // seguro
   const seguro = Array(cols);
-  for (const [ym, entries] of Object.entries(h['Catalana Occidente'])) {
+  for (const [ym, entries] of Object.entries(h[HEADINGS.CATALANA])) {
     const [y, m] = ym.split('-');
     if (m === '11') {
       const col = parseInt(y, 10) - startDate.y;
