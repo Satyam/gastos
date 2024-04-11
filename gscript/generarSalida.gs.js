@@ -15,33 +15,49 @@ function showHeading(t, heading) {
     .setHorizontalAlignment('center');
 }
 
-function showCell(t, row, col, cargos, frecuencia) {
-  const value = cargos.reduce((total, [, importe]) => total + importe, 0);
+const $values = [];
+const $notes = [];
+const $colors = [];
+
+function setCell(col, cols, cargos, frecuencia) {
+  let value = '';
   let color = 'white';
-  let estimate = '';
-  if (frecuencia && col > frecuencia) {
-    estimate = t.getRange(row, col - frecuencia).getValue();
-    if (estimate) {
-      const err = Math.abs(1 - value / estimate);
-      if (err > 0.3) color = 'red';
-      else if (err > 0.2) color = 'pink';
-      else if (err > 0.1) color = 'yellow';
+  let note = '';
+
+  if (cargos) {
+    value = cargos.reduce((total, [, importe]) => total + importe, 0);
+    let estimate = '';
+    if (frecuencia && col >= frecuencia) {
+      estimate = $values[col - frecuencia];
+      if (estimate) {
+        const err = Math.abs(1 - value / estimate);
+        if (err > 0.3) color = 'red';
+        else if (err > 0.2) color = 'pink';
+        else if (err > 0.1) color = 'yellow';
+      }
     }
-  }
-  t
-    .getRange(row, col)
-    .setValue(value)
-    .setNumberFormat(NUMBER_FORMAT)
-    .setBackground(color).setNote(`Cargos:
+    note = `Cargos:
 ${cargos
   .map(
     ([fecha, importe, concepto]) =>
-      `${fecha}: ${Number(importe).toFixed(2)}${
+      `${fecha}: ${formatCurrency(importe)}${
         concepto ? `\n   ${concepto}\n` : ''
       }`
   )
   .join('\n')}
-${estimate ? `Estimado: ${Number(estimate).toFixed(2)}` : ''}`);
+${estimate ? `Estimado: ${formatCurrency(estimate)}` : ''}`;
+  } else {
+    if (frecuencia && col === cols - 1) {
+      const val = $values[col - frecuencia];
+      if (val) {
+        value = val;
+        color = ESTIMATE;
+      }
+    }
+  }
+  $values[col] = value;
+  $colors[col] = color;
+  $notes[col] = note;
 }
 
 function showSaldos(t, saldosRow) {
@@ -95,21 +111,13 @@ function generarSalida() {
       t.getRange(row, 1).setValue(heading);
       const entries = hash[heading] ?? {};
       monthsArray.forEach((ym, colIndex) => {
-        const cargos = entries[ym];
-        const col = colIndex + 2;
-        if (cargos) {
-          showCell(t, row, col, cargos, frecuencia);
-        } else {
-          if (col === cols) {
-            if (frecuencia) {
-              const val = t.getRange(row, col - frecuencia).getDisplayValue();
-              if (val) {
-                t.getRange(row, col).setValue(val).setBackground(ESTIMATE);
-              }
-            }
-          }
-        }
+        setCell(colIndex, cols, entries[ym], frecuencia);
       });
+      t.getRange(row, 2, 1, cols)
+        .setValues([$values])
+        .setNumberFormat(NUMBER_FORMAT)
+        .setBackgrounds([$colors])
+        .setNotes([$notes]);
       addRowFormulas(t, row, cols + 3);
     }
   });
