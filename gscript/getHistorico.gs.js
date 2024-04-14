@@ -36,7 +36,7 @@ function getHistoricoHash() {
   // End of private functions
 
   let lastSaldo = 0;
-  let lastYMD = null;
+  let lastYM = null;
   hashCache = sh.historico
     .getDataRange()
     .getValues()
@@ -54,19 +54,20 @@ function getHistoricoHash() {
           entry[ym] = [[fecha, i]];
         }
         if (heading == HEADINGS.VARIOS) {
+          // This changes the entry from `[fecha, i]` to `[fecha, i, concepto]`
           entry[ym].at(-1).push(concepto);
         }
       };
 
       if (fecha.compare(startDate) < 0) startDate = fecha;
       if (fecha.compare(endDate) > 0) endDate = fecha;
-      if (lastYMD) {
-        if (fecha.ym > lastYMD) {
-          lastYMD = fecha.ym;
+      if (lastYM) {
+        if (fecha.ym > lastYM) {
+          lastYM = fecha.ym;
           saldos.push(lastSaldo);
         }
       } else {
-        lastYMD = fecha.ym;
+        lastYM = fecha.ym;
       }
       prevSaldo = lastSaldo;
       lastSaldo = saldo;
