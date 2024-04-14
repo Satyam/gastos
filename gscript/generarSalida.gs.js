@@ -46,16 +46,19 @@ function generarSalida() {
           else if (err > 0.1) color = 'yellow';
         }
       }
-      note = `Cargos:
-  ${cargos
-    .map(
-      ([fecha, importe, concepto]) =>
-        `${fecha}: ${formatCurrency(importe)}${
-          concepto ? `\n   ${concepto}\n` : ''
-        }`
-    )
-    .join('\n')}
-  ${estimate ? `Estimado: ${formatCurrency(estimate)}` : ''}`;
+      note = l`
+        Cargos:
+          ${cargos
+            .map(
+              ([fecha, importe, concepto]) =>
+                `
+                  ${fecha}: ${formatCurrency(importe)}
+                  ${concepto ?? ''}
+                `
+            )
+            .join('\n')}
+        ${estimate ? `Estimado: ${formatCurrency(estimate)}` : ''}
+      `;
     } else {
       if (frecuencia && col === cols - 1) {
         const val = rowValues[col - frecuencia];

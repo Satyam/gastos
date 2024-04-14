@@ -44,18 +44,27 @@ function getHistoricoHash() {
       if (!date) return hash;
       const fecha = new Fecha(date);
 
-      const addToHash = (heading, i = importe) => {
+      const getYMEntry = (heading) => {
         if (!(heading in hash)) hash[heading] = {};
         const entry = hash[heading];
         const ym = fecha.ym;
-        if (ym in entry) {
-          entry[ym].push([fecha, i]);
-        } else {
-          entry[ym] = [[fecha, i]];
-        }
-        if (heading == HEADINGS.VARIOS) {
+        if (!(ym in entry)) entry[ym] = [];
+        return entry[ym];
+      };
+      const setHashTo = (heading, i = importe) => {
+        const YMEntry = getYMEntry(heading);
+        YMEntry[0] = [fecha, i];
+        if (heading == HEADINGS.VARIOS || heading == HEADINGS.CLASES_ROXY) {
           // This changes the entry from `[fecha, i]` to `[fecha, i, concepto]`
-          entry[ym].at(-1).push(concepto);
+          YMEntry.at(-1).push(concepto);
+        }
+      };
+      const addToHash = (heading, i = importe) => {
+        const YMEntry = getYMEntry(heading);
+        YMEntry.push([fecha, i]);
+        if (heading == HEADINGS.VARIOS || heading == HEADINGS.CLASES_ROXY) {
+          // This changes the entry from `[fecha, i]` to `[fecha, i, concepto]`
+          YMEntry.at(-1).push(concepto);
         }
       };
 
@@ -87,10 +96,10 @@ function getHistoricoHash() {
           }
           break;
         case HEADINGS.TARJETA:
-          addToHash('Saldo antes tarjeta', prevSaldo);
+          setHashTo('Saldo antes tarjeta', prevSaldo);
           break;
         case HEADINGS.ALQUILER_GG:
-          addToHash('Saldo antes alquiler', prevSaldo);
+          setHashTo('Saldo antes alquiler', prevSaldo);
           break;
       }
       addToHash(heading);

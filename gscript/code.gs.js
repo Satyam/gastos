@@ -12,6 +12,7 @@ const HEADINGS = {
   CATALANA: 'Catalana Occidente',
   ALQUILER_GG: 'Pago alquiler GG',
   TARJETA: 'Tarjeta de Crédito',
+  CLASES_ROXY: 'Clases Roxy',
 };
 
 const sSheet = SpreadsheetApp.getActiveSpreadsheet();
@@ -55,5 +56,15 @@ function d(s, ...args) {
       nTrim = l.length - s1.length;
       return s1;
     })
+    .join('\n');
+}
+function l(s, ...args) {
+  if (Array.isArray(s)) {
+    return l(s.map((s1, i) => s1 + (args[i] ?? '')).join(''), ...args);
+  }
+  return s
+    .trim()
+    .split('\n')
+    .map((subs) => subs.trim())
     .join('\n');
 }
