@@ -4,7 +4,7 @@ set in the Tirggers tab in the appScript editor.
 */
 function AddMenu() {
   ui.createMenu('Mi Menu')
-    .addItem('Mostrar Archivos', 'mostrarArchivos')
+    .addItem('Leer Archivo', 'leerArchivo')
     .addItem('Generar Salida', 'generarSalida')
     .addItem('Generar Alquileres', 'generarAlquileres')
     .addToUi();
