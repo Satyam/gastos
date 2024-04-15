@@ -3,70 +3,111 @@
   <head>
     <base target="_top" />
     <style>
-      table {
-        width: 100%;
+      #label,
+      #btnClose,
+      #btnSubmit {
+        display: inline-block;
+        outline: none;
+        cursor: pointer;
+        font-size: 16px;
+        line-height: 20px;
+        font-weight: 600;
+        border-radius: 8px;
+        padding: 13px 23px;
+        border-style: solid;
+        border-width: 1px;
       }
-
-      td {
-        padding: 1rem;
+      #label {
+        background: royalblue;
+        border-color: royalblue;
+        color: gainsboro;
       }
-
-      .size {
-        text-align: right;
+      #label:hover {
+        background: steelBlue;
+        color: white;
       }
-
-      .date {
-        text-align: center;
+      #btnSubmit,
+      #btnClose {
+        border-color: DarkSlateGray;
+        background: white;
+        color: DarkSlateGray;
       }
-      .dialog h1 {
+      #btnSubmit:hover,
+      #btnClose:hover {
+        border-color: black;
+        color: black;
+      }
+      #btnSubmit:disabled {
+        border-color: silver;
+        background: silver;
+        color: gray;
+      }
+      .seleccionado #label {
+        background: white;
+        color: DarkSlateGray;
+        border-color: DarkSlateGray;
+      }
+      .seleccionado #btnSubmit {
+        background: royalblue;
+        border-color: royalblue;
+        color: gainsboro;
+      }
+      .seleccionado #btnSubmit:hover {
+        background: steelBlue;
+        color: white;
+      }
+      #myForm {
+        margin-bottom: 1em;
+      }
+      h1 {
         display: none;
       }
-      .working h1 {
+      .enviando h1 {
         display: block;
-        text-align: center;
       }
-      .working table {
+      .enviando #myForm {
         display: none;
       }
     </style>
   </head>
 
-  <body class="dialog">
-    <h1>Procesando</h1>
-    <table>
-      <tr>
-        <th>Nombre</th>
-        <th>Tamaño (bytes)</th>
-        <th>Fecha de creación</th>
-      </tr>
-      <? for (const file of listFiles()) { ?>
-      <tr>
-        <td>
-          <a href="#<?= file.getId() ?>">
-            <?= file.getName() ?>
-          </a>
-        </td>
-        <td class="size">
-          <?= file.getSize() ?>
-        </td>
-        <td class="date">
-          <?= file.getDateCreated().toLocaleDateString() ?>
-        </td>
-      </tr>
-      <? } ?>
-    </table>
+  <body>
+    <h1>Enviando ...</h1>
+    <form id="myForm">
+      <label id="label" for="inputFile"> Seleccionar Archivo </label>
+      <input id="inputFile" hidden name="inputFile" type="file" />
+      <input id="btnSubmit" type="submit" disabled value="Submit" />
+    </form>
+    <p><button id="btnClose">Cerrar</button></p>
     <script>
-      document.querySelectorAll('a').forEach((aEl) =>
-        aEl.addEventListener('click', (ev) => {
-          ev.preventDefault();
-          document.body.className = 'working';
-          google.script.run
-            .withSuccessHandler(() => google.script.host.close())
-            .procesarArchivo(
-              ev.currentTarget.getAttribute('href').substring(1)
-            );
-        })
-      );
+      document.getElementById('btnClose').addEventListener('click', (ev) => {
+        google.script.host.close();
+      });
+
+      const formEl = document.getElementById('myForm');
+      const labelEl = document.getElementById('label');
+      const inputEl = document.getElementById('inputFile');
+      const submitEl = document.getElementById('btnSubmit');
+      formEl.addEventListener('submit', (ev) => {
+        document.body.classList.add('enviando');
+        ev.preventDefault();
+        google.script.run
+          .withSuccessHandler(() => google.script.host.close())
+          .withFailureHandler(console.error)
+          .processForm(formEl);
+      });
+
+      inputEl.addEventListener('change', (ev) => {
+        if (inputEl.files.length) {
+          formEl.classList.add('seleccionado');
+          labelEl.innerHTML = inputEl.files.item(0).name;
+          btnSubmit.disabled = false;
+        } else {
+          formEl.classList.remove('seleccionado');
+          labelEl.innerHTML = 'Seleccionar Archivo';
+          btnSubmit.disabled = true;
+        }
+      });
     </script>
   </body>
 </html>

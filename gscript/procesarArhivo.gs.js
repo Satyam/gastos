@@ -1,3 +1,8 @@
+function processForm(formObject) {
+  var formBlob = formObject.inputFile;
+  Logger.log(formBlob.getDataAsString());
+}
+
 function procesarArchivo(id) {
   const h = sh.historico;
 
