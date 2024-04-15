@@ -1,9 +1,4 @@
-function processForm(formObject) {
-  var formBlob = formObject.inputFile;
-  Logger.log(formBlob.getDataAsString());
-}
-
-function procesarArchivo(id) {
+function procesarArchivo(formEl) {
   const h = sh.historico;
 
   // private functions
@@ -39,9 +34,8 @@ function procesarArchivo(id) {
 
   h.getRange(1, h.getLastColumn() || 1).activateAsCurrentCell();
   sSheet.setActiveSheet(h);
-  const file = DriveApp.getFileById(id);
-  sSheet.toast(`Leyendo archivo ${file.getName()}`);
-  const contents = file.getBlob().getDataAsString('ISO-8859-1');
+  sSheet.toast(`Recibiendo archivo`);
+  const contents = formEl.inputFile.getDataAsString('ISO-8859-1');
   const movs = readMovimientos(contents);
 
   const newMovs = filterNewRows(movs);
@@ -52,7 +46,5 @@ function procesarArchivo(id) {
   h.getRange(h.getLastRow() + 1, 1, newMovs.length, 4).setValues(
     newMovs.map(([f, ...rest]) => [f.toDate(), ...rest])
   );
-  sSheet.toast('Generando salidas');
-  generarSalida();
   sSheet.toast('Listo');
 }

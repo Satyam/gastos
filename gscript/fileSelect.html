@@ -75,7 +75,7 @@
     <h1>Enviando ...</h1>
     <form id="myForm">
       <label id="label" for="inputFile"> Seleccionar Archivo </label>
-      <input id="inputFile" hidden name="inputFile" type="file" />
+      <input id="inputFile" hidden name="inputFile" type="file" accept=".txt" />
       <input id="btnSubmit" type="submit" disabled value="Submit" />
     </form>
     <p><button id="btnClose">Cerrar</button></p>
@@ -94,7 +94,7 @@
         google.script.run
           .withSuccessHandler(() => google.script.host.close())
           .withFailureHandler(console.error)
-          .processForm(formEl);
+          .procesarArchivo(formEl);
       });
 
       inputEl.addEventListener('change', (ev) => {
