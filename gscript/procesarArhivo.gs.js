@@ -18,33 +18,43 @@ function procesarArchivo(formEl) {
       });
     });
   };
+  const rx =
+    /^\d{2}\/\d{2}\/\d{4}\|.+\|\d{2}\/\d{2}\/\d{4}\|[\d\.\-]+\|[\d\.\-]+\|/;
 
   const readMovimientos = (movs) =>
     movs
       .trim()
       .split('\n')
       .map((row) => {
-        const [d, c, _, i, s] = row.split('|');
-        const fecha = Fecha.fromSabadell(d);
-        return [fecha, c.toUpperCase().trim(), parseFloat(i), parseFloat(s)];
+        if (rx.test(row)) {
+          const [d, c, _, i, s] = row.split('|');
+          const fecha = Fecha.fromSabadell(d);
+          return [fecha, c.toUpperCase().trim(), parseFloat(i), parseFloat(s)];
+        } else {
+          throw new Error('Malformed line in file');
+        }
       })
       .reverse();
 
   // end of private functions
 
-  h.getRange(1, h.getLastColumn() || 1).activateAsCurrentCell();
   sSheet.setActiveSheet(h);
   sSheet.toast(`Recibiendo archivo`);
   const contents = formEl.inputFile.getDataAsString('ISO-8859-1');
-  const movs = readMovimientos(contents);
+  try {
+    const movs = readMovimientos(contents);
 
-  const newMovs = filterNewRows(movs);
-  if (newMovs.length === 0) {
-    sSheet.toast('No hay movimientos nuevos que agregar', '', 15);
+    const newMovs = filterNewRows(movs);
+    if (newMovs.length === 0) {
+      sSheet.toast('No hay movimientos nuevos que agregar', '', 15);
+      return;
+    }
+    h.getRange(h.getLastRow() + 1, 1, newMovs.length, 4)
+      .activate()
+      .setValues(newMovs.map(([f, ...rest]) => [f.toDate(), ...rest]));
+  } catch (err) {
+    ui.alert(err);
     return;
   }
-  h.getRange(h.getLastRow() + 1, 1, newMovs.length, 4).setValues(
-    newMovs.map(([f, ...rest]) => [f.toDate(), ...rest])
-  );
   sSheet.toast('Listo');
 }
