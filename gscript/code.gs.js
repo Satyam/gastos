@@ -1,6 +1,6 @@
 const BIG_FONT = 16;
 const BKG_BAND = 'lightgrey';
-const ESTIMATE = 'lightpink';
+const ESTIMATE = 'gold';
 const NUMBER_FORMAT = '#,0.00';
 
 // Estos se tienen que corresponder con los de la solapa `Encabezados`
@@ -68,3 +68,34 @@ function l(s, ...args) {
     .map((subs) => subs.trim())
     .join('\n');
 }
+
+function changeColor(prev, next) {
+  const p = Math.abs(prev),
+    n = Math.abs(next);
+  const change = Math.round(9 * (1 - Math.min(p, n) / Math.max(p, n)));
+  return change ? (prev < next ? blues[change] : reds[change]) : '#ffffff';
+}
+
+const reds = [
+  '#fff5f0',
+  '#fee0d2',
+  '#fcbba1',
+  '#fc9272',
+  '#fb6a4a',
+  '#ef3b2c',
+  '#cb181d',
+  '#a50f15',
+  '#67000d',
+];
+
+const blues = [
+  '#f7fbff',
+  '#deebf7',
+  '#c6dbef',
+  '#9ecae1',
+  '#6baed6',
+  '#4292c6',
+  '#2171b5',
+  '#08519c',
+  '#08306b',
+];
