@@ -13,6 +13,8 @@ const HEADINGS = {
   ALQUILER_GG: 'Pago alquiler GG',
   TARJETA: 'Tarjeta de Crédito',
   CLASES_ROXY: 'Clases Roxy',
+  ANTES_TARJETA: 'Saldo antes tarjeta',
+  ANTES_ALQUILER: 'Saldo antes alquiler',
 };
 
 const sSheet = SpreadsheetApp.getActiveSpreadsheet();

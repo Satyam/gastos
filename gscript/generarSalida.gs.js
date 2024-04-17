@@ -88,6 +88,21 @@ function generarSalida() {
       .setBackground(BKG_BAND);
   };
 
+  const showTests = (row) => {
+    t.getRange(row, 1, 2, 1).setValues([
+      [HEADINGS.ANTES_TARJETA],
+      [HEADINGS.ANTES_ALQUILER],
+    ]);
+    const tarj = hash[HEADINGS.ANTES_TARJETA];
+    const alq = hash[HEADINGS.ANTES_ALQUILER];
+    t.getRange(row, 2, 2, cols)
+      .setValues([
+        monthsArray.map((ym) => (tarj[ym] ? tarj[ym][0][1] : '')),
+        monthsArray.map((ym) => (alq[ym] ? alq[ym][0][1] : '')),
+      ])
+      .setNumberFormat(NUMBER_FORMAT);
+  };
+
   const addBottomFormulas = (row) => {
     t.getRange(row, 3, 1, cols - 1)
       .setFormulasR1C1([
@@ -108,7 +123,18 @@ function generarSalida() {
       ])
       .setNumberFormat(NUMBER_FORMAT);
   };
-
+  const addEstimateCalculation = (row, col) => {
+    t.getRange(row, col, 3, 1).setValues([
+      ['Saldo (estimado)'],
+      ['Tarjeta'],
+      ['Faltante'],
+    ]);
+    t.getRange(row, col + 1, 3, 1).setFormulasR1C1([
+      ['R[-2]C[-1] + sum(R2C:R[-3]C)'],
+      ['0'],
+      ['if(R[-1]C - R[-2]C >0; R[-1]C - R[-2]C; 0)'],
+    ]);
+  };
   // end of private functions
 
   headings.forEach(([heading, frecuencia], rowIndex) => {
@@ -131,7 +157,9 @@ function generarSalida() {
   });
 
   showSaldos(rows + 1);
+  showTests(rows + 10);
   addBottomFormulas(rows + 2);
+  addEstimateCalculation(rows + 3, cols);
   t.autoResizeColumn(1);
-  t.getRange(1, t.getLastColumn()).activateAsCurrentCell();
+  t.getRange(t.getLastRow(), t.getLastColumn()).activateAsCurrentCell();
 }

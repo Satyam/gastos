@@ -37,6 +37,7 @@ function getHistoricoHash() {
 
   let lastSaldo = 0;
   let lastYM = null;
+  let prevSaldo = 0;
   hashCache = sh.historico
     .getDataRange()
     .getValues()
@@ -56,7 +57,7 @@ function getHistoricoHash() {
         YMEntry[0] = [fecha, i];
         if (heading == HEADINGS.VARIOS || heading == HEADINGS.CLASES_ROXY) {
           // This changes the entry from `[fecha, i]` to `[fecha, i, concepto]`
-          YMEntry.at(-1).push(concepto);
+          YMEntry[0].push(concepto);
         }
       };
       const addToHash = (heading, i = importe) => {
@@ -96,10 +97,10 @@ function getHistoricoHash() {
           }
           break;
         case HEADINGS.TARJETA:
-          setHashTo('Saldo antes tarjeta', prevSaldo);
+          setHashTo(HEADINGS.ANTES_TARJETA, prevSaldo);
           break;
         case HEADINGS.ALQUILER_GG:
-          setHashTo('Saldo antes alquiler', prevSaldo);
+          setHashTo(HEADINGS.ANTES_ALQUILER, prevSaldo);
           break;
       }
       addToHash(heading);
