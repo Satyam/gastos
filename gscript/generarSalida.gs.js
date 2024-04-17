@@ -40,10 +40,7 @@ function generarSalida() {
       if (frecuencia && col >= frecuencia) {
         estimate = rowValues[col - frecuencia];
         if (estimate) {
-          const err = Math.abs(1 - value / estimate);
-          if (err > 0.3) color = 'red';
-          else if (err > 0.2) color = 'pink';
-          else if (err > 0.1) color = 'yellow';
+          color = changeColor(estimate, value);
         }
       }
       note = l`
@@ -57,7 +54,12 @@ function generarSalida() {
                 `
             )
             .join('\n')}
-        ${estimate ? `Estimado: ${formatCurrency(estimate)}` : ''}
+        ${
+          estimate
+            ? `Estimado: ${formatCurrency(estimate)}
+              de hace ${frecuencia} mes[es]`
+            : ''
+        }
       `;
     } else {
       if (frecuencia && col === cols - 1) {
@@ -65,6 +67,7 @@ function generarSalida() {
         if (val) {
           value = val;
           color = ESTIMATE;
+          note = `Estimado de hace ${frecuencia} mes[es]`;
         }
       }
     }
