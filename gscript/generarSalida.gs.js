@@ -2,7 +2,6 @@ const saldos = [];
 
 function generarSalida() {
   const t = sh.totales;
-  initTables();
   sSheet.setActiveSheet(t);
   t.clear().clearNotes().setFrozenColumns(1); // warning: does not chain
 

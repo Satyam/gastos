@@ -5,6 +5,8 @@ const monthsArray = [];
 
 function getHistoricoHash() {
   if (hashCache) return hashCache;
+  initTables();
+
   const descHash = {};
 
   // Private functions only used here
@@ -38,6 +40,19 @@ function getHistoricoHash() {
   let lastSaldo = 0;
   let lastYM = null;
   let prevSaldo = 0;
+  let inside = false;
+  const headingsHash = headings.reduce((hash, [heading, frecuencia]) => {
+    if (heading.startsWith('-')) return hash;
+    return {
+      [heading]: {
+        frecuencia,
+        within: 0,
+        total: 0,
+        importe: 0,
+      },
+      ...hash,
+    };
+  }, {});
   hashCache = sh.historico
     .getDataRange()
     .getValues()
@@ -82,6 +97,11 @@ function getHistoricoHash() {
       prevSaldo = lastSaldo;
       lastSaldo = saldo;
       const heading = findHeading(concepto);
+      headingsHash[heading].total += 1;
+      if (inside && importe < 0) {
+        headingsHash[heading].within += 1;
+        headingsHash[heading].importe += importe;
+      }
       switch (heading) {
         case HEADINGS.VARIOS:
           if (descHash[concepto]) {
@@ -97,9 +117,11 @@ function getHistoricoHash() {
           }
           break;
         case HEADINGS.TARJETA:
+          inside = true;
           setHashTo(HEADINGS.ANTES_TARJETA, prevSaldo);
           break;
         case HEADINGS.ALQUILER_GG:
+          inside = false;
           setHashTo(HEADINGS.ANTES_ALQUILER, prevSaldo);
           break;
       }
@@ -109,5 +131,28 @@ function getHistoricoHash() {
   saldos.push(lastSaldo);
   startDate.loopUntilMonth((f) => monthsArray.push(f.ym), endDate);
   showDesconocidos();
+  sh.within
+    .getRange(1, 1, 1, 6)
+    .setValues([
+      ['Heading', 'within', 'total', 'importe', 'promedio', 'frecuencia'],
+    ]);
+  sh.within.getRange(2, 1, Object.keys(headingsHash).length, 6).setValues(
+    Object.keys(headingsHash).map((heading) => {
+      const { frecuencia, within, total, importe } = headingsHash[heading];
+      return [
+        heading,
+        within,
+        total,
+        importe,
+        within ? importe / within : 0,
+        frecuencia,
+      ];
+    })
+  );
+  /*  for (const [heading, {frecuencia, within, total, importe}] of Object.entries(headingsHash)) {
+    if (within) {
+      console.log(heading, within, total, importe / within, frecuencia)
+    }
+  }*/
   return hashCache;
 }

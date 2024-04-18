@@ -1,5 +1,4 @@
 function generarAlquileres() {
-  initTables();
   const a = sh.alquileres;
   a.clear().clearNotes();
   sSheet.setActiveSheet(a);
