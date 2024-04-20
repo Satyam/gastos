@@ -34,7 +34,7 @@ function procesarArchivo(formEl) {
           throw new Error('Malformed line in file');
         }
       })
-      .reverse();
+      .sort((rowA, rowB) => rowA[0].compare(rowB[0]));
 
   // end of private functions
 
