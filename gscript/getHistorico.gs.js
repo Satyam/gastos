@@ -8,6 +8,23 @@ function getHistoricoHash() {
   initTables();
 
   const descHash = {};
+  const headingsHash = headings.reduce((hash, [heading, frecuencia]) => {
+    if (heading.startsWith('-')) return hash;
+    return {
+      [heading]: {
+        frecuencia,
+        within: 0,
+        total: 0,
+        importe: 0,
+        $within: 0,
+        $total: 0,
+        $importe: 0,
+        $dia: 0,
+      },
+      ...hash,
+    };
+  }, {});
+  let inside = false;
 
   // Private functions only used here
   const showDesconocidos = () => {
@@ -35,29 +52,74 @@ function getHistoricoHash() {
     conocidos[Object.keys(conocidos).find((s) => concepto.includes(s))] ??
     HEADINGS.VARIOS;
 
+  const addToHeadingHash = (heading, fecha, importe) => {
+    const hh = headingsHash[heading];
+    hh.total += 1;
+    if (ultimoAnyo.compare(fecha) < 0) hh.$total += 1;
+    if (inside && importe < 0) {
+      hh.within += 1;
+      hh.importe += importe;
+      if (ultimoAnyo.compare(fecha) < 0) {
+        hh.$within += 1;
+        hh.$importe += importe;
+        hh.$dia += fecha.d;
+      }
+    }
+  };
+
+  const showHeadingsHash = () => {
+    sh.within
+      .getRange(1, 1, 1, 11)
+      .setValues([
+        [
+          'Heading',
+          'frecuencia',
+          'within',
+          'total',
+          'importe',
+          'promedio',
+          '$within',
+          '$total',
+          '$importe',
+          '$promedio',
+          '$dia',
+        ],
+      ]);
+
+    sh.within.getRange(2, 1, Object.keys(headingsHash).length, 11).setValues(
+      Object.keys(headingsHash).map((heading) => {
+        const {
+          frecuencia,
+          within,
+          total,
+          importe,
+          $within,
+          $total,
+          $importe,
+          $dia,
+        } = headingsHash[heading];
+        return [
+          heading,
+          frecuencia,
+          within,
+          total,
+          importe,
+          within ? importe / within : 0,
+          $within,
+          $total,
+          $importe,
+          $within ? $importe / $within : 0,
+          $within ? $dia / $within : 0,
+        ];
+      })
+    );
+  };
   // End of private functions
 
   let lastSaldo = 0;
   let lastYM = null;
   let prevSaldo = 0;
-  let inside = false;
 
-  const headingsHash = headings.reduce((hash, [heading, frecuencia]) => {
-    if (heading.startsWith('-')) return hash;
-    return {
-      [heading]: {
-        frecuencia,
-        within: 0,
-        total: 0,
-        importe: 0,
-        $within: 0,
-        $total: 0,
-        $importe: 0,
-        $dia: 0,
-      },
-      ...hash,
-    };
-  }, {});
   const historico = sh.historico.getDataRange().getValues();
 
   startDate = new Fecha(historico[0][0]);
@@ -104,18 +166,10 @@ function getHistoricoHash() {
     prevSaldo = lastSaldo;
     lastSaldo = saldo;
     const heading = findHeading(concepto);
-    const hh = headingsHash[heading];
-    hh.total += 1;
-    if (ultimoAnyo.compare(fecha) < 0) hh.$total += 1;
-    if (inside && importe < 0) {
-      hh.within += 1;
-      hh.importe += importe;
-      if (ultimoAnyo.compare(fecha) < 0) {
-        hh.$within += 1;
-        hh.$importe += importe;
-        hh.$dia += fecha.d;
-      }
-    }
+
+    addToHash(heading);
+    addToHeadingHash(heading, fecha, importe);
+
     switch (heading) {
       case HEADINGS.VARIOS:
         {
@@ -141,60 +195,10 @@ function getHistoricoHash() {
         setHashTo(HEADINGS.ANTES_ALQUILER, prevSaldo);
         break;
     }
-    addToHash(heading);
     return hash;
   }, {});
   saldos.push(lastSaldo);
   showDesconocidos();
-  sh.within
-    .getRange(1, 1, 1, 11)
-    .setValues([
-      [
-        'Heading',
-        'frecuencia',
-        'within',
-        'total',
-        'importe',
-        'promedio',
-        '$within',
-        '$total',
-        '$importe',
-        '$promedio',
-        '$dia',
-      ],
-    ]);
-
-  sh.within.getRange(2, 1, Object.keys(headingsHash).length, 11).setValues(
-    Object.keys(headingsHash).map((heading) => {
-      const {
-        frecuencia,
-        within,
-        total,
-        importe,
-        $within,
-        $total,
-        $importe,
-        $dia,
-      } = headingsHash[heading];
-      return [
-        heading,
-        frecuencia,
-        within,
-        total,
-        importe,
-        within ? importe / within : 0,
-        $within,
-        $total,
-        $importe,
-        $within ? $importe / $within : 0,
-        $within ? $dia / $within : 0,
-      ];
-    })
-  );
-  /*  for (const [heading, {frecuencia, within, total, importe}] of Object.entries(headingsHash)) {
-    if (within) {
-      console.log(heading, within, total, importe / within, frecuencia)
-    }
-  }*/
+  showHeadingsHash();
   return hashCache;
 }
