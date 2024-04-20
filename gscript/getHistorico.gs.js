@@ -68,26 +68,25 @@ function getHistoricoHash() {
   };
 
   const showHeadingsHash = () => {
-    sh.within
-      .getRange(1, 1, 1, 11)
-      .setValues([
-        [
-          'Heading',
-          'frecuencia',
-          'within',
-          'total',
-          'importe',
-          'promedio',
-          '$within',
-          '$total',
-          '$importe',
-          '$promedio',
-          '$dia',
-        ],
-      ]);
+    const hdgs = Object.keys(headingsHash);
+    const titles = [
+      'Heading',
+      'frecuencia',
+      'within',
+      'total',
+      'importe',
+      'promedio',
+      '$within',
+      '$total',
+      '$importe',
+      '$promedio',
+      '$dia',
+    ];
 
-    sh.within.getRange(2, 1, Object.keys(headingsHash).length, 11).setValues(
-      Object.keys(headingsHash).map((heading) => {
+    sh.within.getRange(1, 1, 1, titles.length).setValues([titles]);
+
+    sh.within.getRange(2, 1, hdgs.length, titles.length).setValues(
+      hdgs.map((heading) => {
         const {
           frecuencia,
           within,
