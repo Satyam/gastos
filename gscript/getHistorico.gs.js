@@ -97,23 +97,26 @@ function getHistoricoHash() {
       prevSaldo = lastSaldo;
       lastSaldo = saldo;
       const heading = findHeading(concepto);
-      headingsHash[heading].total += 1;
+      const hh = headingsHash[heading];
+      hh.total += 1;
       if (inside && importe < 0) {
-        headingsHash[heading].within += 1;
-        headingsHash[heading].importe += importe;
+        hh.within += 1;
+        hh.importe += importe;
       }
       switch (heading) {
         case HEADINGS.VARIOS:
-          if (descHash[concepto]) {
-            descHash[concepto].cant += 1;
-            descHash[concepto].importe += importe;
-            descHash[concepto].fechas.push(fecha.toString());
-          } else {
-            descHash[concepto] = {
-              cant: 1,
-              importe,
-              fechas: [fecha.toString()],
-            };
+          {
+            let dh = descHash[concepto];
+            if (!dh) {
+              descHash[concepto] = dh = {
+                cant: 0,
+                importe: 0,
+                fechas: [],
+              };
+              dh.cant += 1;
+              dh.importe += importe;
+              dh.fechas.push(fecha.toString());
+            }
           }
           break;
         case HEADINGS.TARJETA:
