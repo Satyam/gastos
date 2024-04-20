@@ -1,6 +1,6 @@
 let hashCache = null;
-let startDate = new Fecha(9999, 12, 30);
-let endDate = new Fecha(1, 1, 1);
+let startDate = null;
+let endDate = null;
 const monthsArray = [];
 
 function getHistoricoHash() {
@@ -41,6 +41,7 @@ function getHistoricoHash() {
   let lastYM = null;
   let prevSaldo = 0;
   let inside = false;
+
   const headingsHash = headings.reduce((hash, [heading, frecuencia]) => {
     if (heading.startsWith('-')) return hash;
     return {
@@ -49,106 +50,144 @@ function getHistoricoHash() {
         within: 0,
         total: 0,
         importe: 0,
+        $within: 0,
+        $total: 0,
+        $importe: 0,
+        $dia: 0,
       },
       ...hash,
     };
   }, {});
-  hashCache = sh.historico
-    .getDataRange()
-    .getValues()
-    .reduce((hash, [date, concepto, importe, saldo]) => {
-      if (!date) return hash;
-      const fecha = new Fecha(date);
+  const historico = sh.historico.getDataRange().getValues();
 
-      const getYMEntry = (heading) => {
-        if (!(heading in hash)) hash[heading] = {};
-        const entry = hash[heading];
-        const ym = fecha.ym;
-        if (!(ym in entry)) entry[ym] = [];
-        return entry[ym];
-      };
-      const setHashTo = (heading, i = importe) => {
-        const YMEntry = getYMEntry(heading);
-        YMEntry[0] = [fecha, i];
-        if (heading == HEADINGS.VARIOS || heading == HEADINGS.CLASES_ROXY) {
-          // This changes the entry from `[fecha, i]` to `[fecha, i, concepto]`
-          YMEntry[0].push(concepto);
-        }
-      };
-      const addToHash = (heading, i = importe) => {
-        const YMEntry = getYMEntry(heading);
-        YMEntry.push([fecha, i]);
-        if (heading == HEADINGS.VARIOS || heading == HEADINGS.CLASES_ROXY) {
-          // This changes the entry from `[fecha, i]` to `[fecha, i, concepto]`
-          YMEntry.at(-1).push(concepto);
-        }
-      };
-
-      if (fecha.compare(startDate) < 0) startDate = fecha;
-      if (fecha.compare(endDate) > 0) endDate = fecha;
-      if (lastYM) {
-        if (fecha.ym > lastYM) {
-          lastYM = fecha.ym;
-          saldos.push(lastSaldo);
-        }
-      } else {
-        lastYM = fecha.ym;
-      }
-      prevSaldo = lastSaldo;
-      lastSaldo = saldo;
-      const heading = findHeading(concepto);
-      const hh = headingsHash[heading];
-      hh.total += 1;
-      if (inside && importe < 0) {
-        hh.within += 1;
-        hh.importe += importe;
-      }
-      switch (heading) {
-        case HEADINGS.VARIOS:
-          {
-            let dh = descHash[concepto];
-            if (!dh) {
-              descHash[concepto] = dh = {
-                cant: 0,
-                importe: 0,
-                fechas: [],
-              };
-              dh.cant += 1;
-              dh.importe += importe;
-              dh.fechas.push(fecha.toString());
-            }
-          }
-          break;
-        case HEADINGS.TARJETA:
-          inside = true;
-          setHashTo(HEADINGS.ANTES_TARJETA, prevSaldo);
-          break;
-        case HEADINGS.ALQUILER_GG:
-          inside = false;
-          setHashTo(HEADINGS.ANTES_ALQUILER, prevSaldo);
-          break;
-      }
-      addToHash(heading);
-      return hash;
-    }, {});
-  saldos.push(lastSaldo);
+  startDate = new Fecha(historico[0][0]);
+  endDate = new Fecha(historico.at(-1)[0]);
   startDate.loopUntilMonth((f) => monthsArray.push(f.ym), endDate);
+  const ultimoAnyo = new Fecha(endDate.y - 1, endDate.m);
+
+  hashCache = historico.reduce((hash, [date, concepto, importe, saldo]) => {
+    if (!date) return hash;
+    const fecha = new Fecha(date);
+
+    const getYMEntry = (heading) => {
+      if (!(heading in hash)) hash[heading] = {};
+      const entry = hash[heading];
+      const ym = fecha.ym;
+      if (!(ym in entry)) entry[ym] = [];
+      return entry[ym];
+    };
+    const setHashTo = (heading, i = importe) => {
+      const YMEntry = getYMEntry(heading);
+      YMEntry[0] = [fecha, i];
+      if (heading == HEADINGS.VARIOS || heading == HEADINGS.CLASES_ROXY) {
+        // This changes the entry from `[fecha, i]` to `[fecha, i, concepto]`
+        YMEntry[0].push(concepto);
+      }
+    };
+    const addToHash = (heading, i = importe) => {
+      const YMEntry = getYMEntry(heading);
+      YMEntry.push([fecha, i]);
+      if (heading == HEADINGS.VARIOS || heading == HEADINGS.CLASES_ROXY) {
+        // This changes the entry from `[fecha, i]` to `[fecha, i, concepto]`
+        YMEntry.at(-1).push(concepto);
+      }
+    };
+
+    if (lastYM) {
+      if (fecha.ym > lastYM) {
+        lastYM = fecha.ym;
+        saldos.push(lastSaldo);
+      }
+    } else {
+      lastYM = fecha.ym;
+    }
+    prevSaldo = lastSaldo;
+    lastSaldo = saldo;
+    const heading = findHeading(concepto);
+    const hh = headingsHash[heading];
+    hh.total += 1;
+    if (ultimoAnyo.compare(fecha) < 0) hh.$total += 1;
+    if (inside && importe < 0) {
+      hh.within += 1;
+      hh.importe += importe;
+      if (ultimoAnyo.compare(fecha) < 0) {
+        hh.$within += 1;
+        hh.$importe += importe;
+        hh.$dia += fecha.d;
+      }
+    }
+    switch (heading) {
+      case HEADINGS.VARIOS:
+        {
+          let dh = descHash[concepto];
+          if (!dh) {
+            descHash[concepto] = dh = {
+              cant: 0,
+              importe: 0,
+              fechas: [],
+            };
+            dh.cant += 1;
+            dh.importe += importe;
+            dh.fechas.push(fecha.toString());
+          }
+        }
+        break;
+      case HEADINGS.TARJETA:
+        inside = true;
+        setHashTo(HEADINGS.ANTES_TARJETA, prevSaldo);
+        break;
+      case HEADINGS.ALQUILER_GG:
+        inside = false;
+        setHashTo(HEADINGS.ANTES_ALQUILER, prevSaldo);
+        break;
+    }
+    addToHash(heading);
+    return hash;
+  }, {});
+  saldos.push(lastSaldo);
   showDesconocidos();
   sh.within
-    .getRange(1, 1, 1, 6)
+    .getRange(1, 1, 1, 11)
     .setValues([
-      ['Heading', 'within', 'total', 'importe', 'promedio', 'frecuencia'],
+      [
+        'Heading',
+        'frecuencia',
+        'within',
+        'total',
+        'importe',
+        'promedio',
+        '$within',
+        '$total',
+        '$importe',
+        '$promedio',
+        '$dia',
+      ],
     ]);
-  sh.within.getRange(2, 1, Object.keys(headingsHash).length, 6).setValues(
+
+  sh.within.getRange(2, 1, Object.keys(headingsHash).length, 11).setValues(
     Object.keys(headingsHash).map((heading) => {
-      const { frecuencia, within, total, importe } = headingsHash[heading];
+      const {
+        frecuencia,
+        within,
+        total,
+        importe,
+        $within,
+        $total,
+        $importe,
+        $dia,
+      } = headingsHash[heading];
       return [
         heading,
+        frecuencia,
         within,
         total,
         importe,
         within ? importe / within : 0,
-        frecuencia,
+        $within,
+        $total,
+        $importe,
+        $within ? $importe / $within : 0,
+        $within ? $dia / $within : 0,
       ];
     })
   );
