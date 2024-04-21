@@ -1,0 +1,83 @@
+class InsideGap {
+  constructor(ultimoAnyo) {
+    this.ultimoAnyo = ultimoAnyo;
+    // `headings` comes from `tablas.gs`
+    this.hash = headings.reduce((hash, [heading, frecuencia]) => {
+      if (heading.startsWith('-')) return hash;
+      return {
+        [heading]: {
+          frecuencia,
+          within: 0,
+          total: 0,
+          importe: 0,
+          $within: 0,
+          $total: 0,
+          $importe: 0,
+          $dia: 0,
+        },
+        ...hash,
+      };
+    }, {});
+  }
+  add(inside, heading, fecha, importe) {
+    const hh = this.hash[heading];
+    const dentro = this.ultimoAnyo.compare(fecha) < 0;
+    hh.total += 1;
+    if (dentro) hh.$total += 1;
+    if (inside && importe < 0) {
+      hh.within += 1;
+      hh.importe += importe;
+      if (dentro) {
+        hh.$within += 1;
+        hh.$importe += importe;
+        hh.$dia += fecha.d;
+      }
+    }
+  }
+  show() {
+    const hdgs = Object.keys(this.hash);
+    const titles = [
+      'Heading',
+      'frecuencia',
+      'within',
+      'total',
+      'importe',
+      'promedio',
+      '$within',
+      '$total',
+      '$importe',
+      '$promedio',
+      '$dia',
+    ];
+
+    sh.within.getRange(1, 1, 1, titles.length).setValues([titles]);
+
+    sh.within.getRange(2, 1, hdgs.length, titles.length).setValues(
+      hdgs.map((heading) => {
+        const {
+          frecuencia,
+          within,
+          total,
+          importe,
+          $within,
+          $total,
+          $importe,
+          $dia,
+        } = this.hash[heading];
+        return [
+          heading,
+          frecuencia,
+          within,
+          total,
+          importe,
+          within ? importe / within : 0,
+          $within,
+          $total,
+          $importe,
+          $within ? $importe / $within : 0,
+          $within ? $dia / $within : 0,
+        ];
+      })
+    );
+  }
+}

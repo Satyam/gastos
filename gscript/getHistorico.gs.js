@@ -7,112 +7,11 @@ function getHistoricoHash() {
   if (hashCache) return hashCache;
   initTables();
 
-  const descHash = {};
-  const headingsHash = headings.reduce((hash, [heading, frecuencia]) => {
-    if (heading.startsWith('-')) return hash;
-    return {
-      [heading]: {
-        frecuencia,
-        within: 0,
-        total: 0,
-        importe: 0,
-        $within: 0,
-        $total: 0,
-        $importe: 0,
-        $dia: 0,
-      },
-      ...hash,
-    };
-  }, {});
-  let inside = false;
-
   // Private functions only used here
-  const showDesconocidos = () => {
-    sh.desconocidos.clear();
-    const desc = Object.entries(descHash);
-    if (desc.length) {
-      sh.desconocidos
-        .getRange(1, 1, desc.length + 1, 4)
-        .setValues([
-          ['Concepto', 'Ocurrencias', 'Total', 'Fechas'],
-          ...desc.map(([concepto, info]) => [
-            concepto,
-            info.cant,
-            info.importe,
-            info.fechas.join(' , '),
-          ]),
-        ])
-        .sort([
-          { column: 3, ascending: false },
-          { column: 2, ascending: false },
-        ]);
-    }
-  };
   const findHeading = (concepto) =>
     conocidos[Object.keys(conocidos).find((s) => concepto.includes(s))] ??
     HEADINGS.VARIOS;
 
-  const addToHeadingHash = (heading, fecha, importe) => {
-    const hh = headingsHash[heading];
-    hh.total += 1;
-    if (ultimoAnyo.compare(fecha) < 0) hh.$total += 1;
-    if (inside && importe < 0) {
-      hh.within += 1;
-      hh.importe += importe;
-      if (ultimoAnyo.compare(fecha) < 0) {
-        hh.$within += 1;
-        hh.$importe += importe;
-        hh.$dia += fecha.d;
-      }
-    }
-  };
-
-  const showHeadingsHash = () => {
-    const hdgs = Object.keys(headingsHash);
-    const titles = [
-      'Heading',
-      'frecuencia',
-      'within',
-      'total',
-      'importe',
-      'promedio',
-      '$within',
-      '$total',
-      '$importe',
-      '$promedio',
-      '$dia',
-    ];
-
-    sh.within.getRange(1, 1, 1, titles.length).setValues([titles]);
-
-    sh.within.getRange(2, 1, hdgs.length, titles.length).setValues(
-      hdgs.map((heading) => {
-        const {
-          frecuencia,
-          within,
-          total,
-          importe,
-          $within,
-          $total,
-          $importe,
-          $dia,
-        } = headingsHash[heading];
-        return [
-          heading,
-          frecuencia,
-          within,
-          total,
-          importe,
-          within ? importe / within : 0,
-          $within,
-          $total,
-          $importe,
-          $within ? $importe / $within : 0,
-          $within ? $dia / $within : 0,
-        ];
-      })
-    );
-  };
   // End of private functions
 
   let lastSaldo = 0;
@@ -124,7 +23,10 @@ function getHistoricoHash() {
   startDate = new Fecha(historico[0][0]);
   endDate = new Fecha(historico.at(-1)[0]);
   startDate.loopUntilMonth((f) => monthsArray.push(f.ym), endDate);
-  const ultimoAnyo = new Fecha(endDate.y - 1, endDate.m);
+
+  const descHash = new Desconocidos();
+  const insideGap = new InsideGap(new Fecha(endDate.y - 1, endDate.m));
+  let inside = false;
 
   hashCache = historico.reduce((hash, [date, concepto, importe, saldo]) => {
     if (!date) return hash;
@@ -167,23 +69,11 @@ function getHistoricoHash() {
     const heading = findHeading(concepto);
 
     addToHash(heading);
-    addToHeadingHash(heading, fecha, importe);
+    insideGap.add(inside, heading, fecha, importe);
 
     switch (heading) {
       case HEADINGS.VARIOS:
-        {
-          let dh = descHash[concepto];
-          if (!dh) {
-            descHash[concepto] = dh = {
-              cant: 0,
-              importe: 0,
-              fechas: [],
-            };
-            dh.cant += 1;
-            dh.importe += importe;
-            dh.fechas.push(fecha.toString());
-          }
-        }
+        descHash.add(concepto, fecha, importe);
         break;
       case HEADINGS.TARJETA:
         inside = true;
@@ -197,7 +87,7 @@ function getHistoricoHash() {
     return hash;
   }, {});
   saldos.push(lastSaldo);
-  showDesconocidos();
-  showHeadingsHash();
+  descHash.show();
+  insideGap.show();
   return hashCache;
 }
