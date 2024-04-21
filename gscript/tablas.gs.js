@@ -17,12 +17,29 @@ const getHeadings = () =>
     .getValues()
     .filter((row) => row[0].length);
 
+const getEstimados = () =>
+  sh.estimados
+    .getRange(2, 1, sh.estimados.getLastRow(), 3)
+    .getValues()
+    .reduce(
+      (est, row) => ({
+        ...est,
+        [row[0].trim()]: {
+          formula: `=${row[1]}`,
+          note: row[2],
+        },
+      }),
+      {}
+    );
+
 let conocidos = {};
 let headings = [];
+let estimados = {};
 
 function initTables() {
   conocidos = getConocidosHash();
   headings = getHeadings();
+  estimados = getEstimados();
 
   const headingsHash = headings.reduce((hash, [heading]) => {
     if (heading.startsWith('-')) return hash;

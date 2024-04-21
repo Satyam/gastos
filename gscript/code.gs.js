@@ -13,6 +13,7 @@ const HEADINGS = {
   ALQUILER_GG: 'Pago alquiler GG',
   TARJETA: 'Tarjeta de Crédito',
   CLASES_ROXY: 'Clases Roxy',
+  SANITAS: 'Sanitas',
   ANTES_TARJETA: 'Saldo antes tarjeta',
   ANTES_ALQUILER: 'Saldo antes alquiler',
 };
@@ -27,6 +28,7 @@ const sh = {
   desconocidos: sSheet.getSheetByName('Desconocidos'),
   alquileres: sSheet.getSheetByName('Alquileres'),
   within: sSheet.getSheetByName('within'),
+  estimados: sSheet.getSheetByName('Estimados'),
 };
 
 const ui = SpreadsheetApp.getUi();

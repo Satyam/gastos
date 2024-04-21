@@ -123,15 +123,19 @@ function generarSalida() {
       .setNumberFormat(NUMBER_FORMAT);
   };
   const addEstimateCalculation = (row, col) => {
-    t.getRange(row, col, 3, 1).setValues([
-      ['Saldo (estimado)'],
+    t.getRange(row, col, 5, 1).setValues([
+      ['Saldo mes pasado'],
+      ['Gastos del mes'],
+      ['Estimados antes alquiler'],
       ['Tarjeta'],
       ['Faltante'],
     ]);
-    t.getRange(row, col + 1, 3, 1).setFormulasR1C1([
-      ['R[-2]C[-1] + sum(R2C:R[-3]C)'],
+    t.getRange(row, col + 1, 5, 1).setFormulasR1C1([
+      ['R[-3]C[-3]'],
+      ['sum(R2C[-2]:R[-7]C[-2])'],
+      ['sum(R2C[-1]:R[-7]C[-1])'],
       ['0'],
-      ['if(R[-1]C - R[-2]C >0; R[-1]C - R[-2]C; 0)'],
+      ['max(R[-1]C - sum(R[-2]C:R[-4]C);0)'],
     ]);
   };
   // end of private functions
@@ -151,6 +155,14 @@ function generarSalida() {
         .setNumberFormat(NUMBER_FORMAT)
         .setBackgrounds([rowColors])
         .setNotes([rowNotes]);
+      const estimado = estimados[heading];
+      if (estimado) {
+        t.getRange(row, cols + 2)
+          .setFormulaR1C1(estimado.formula)
+          .setNote(estimado.note)
+          .setNumberFormat(NUMBER_FORMAT)
+          .setBackground(ESTIMATE);
+      }
       addRowFormulas(row, cols + 3);
     }
   });
@@ -158,7 +170,7 @@ function generarSalida() {
   showSaldos(rows + 1);
   showTests(rows + 10);
   addBottomFormulas(rows + 2);
-  addEstimateCalculation(rows + 3, cols);
+  addEstimateCalculation(rows + 4, cols + 2);
   t.autoResizeColumn(1);
   t.getRange(t.getLastRow(), t.getLastColumn()).activateAsCurrentCell();
 }
