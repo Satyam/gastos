@@ -1,0 +1,11 @@
+{
+  "name": "aeb43",
+  "version": "1.0.0",
+  "description": "Lector de fichero AEB 43",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Daniel Barreiro <satyam@satyam.com.ar> (Satyam)",
+  "license": "MIT"
+}
