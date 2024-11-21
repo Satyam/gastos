@@ -1,6 +1,8 @@
 import {
   CabeceraCuenta,
   PrincipalMovimiento,
+  ComplementarioConcepto,
+  FinCuenta,
   FinFichero,
 } from './registros.mjs';
 import { numField } from './utils.mjs';
@@ -13,6 +15,7 @@ const f43File = await readFile(
 );
 
 const f43 = f43File.split('\n');
+let lastMovimiento = null;
 loop: for (let i = 0; true; i++) {
   const row = f43[i];
   console.log(i);
@@ -21,8 +24,19 @@ loop: for (let i = 0; true; i++) {
       console.table(new CabeceraCuenta(row));
       break;
     case PrincipalMovimiento.type:
-      console.table(new PrincipalMovimiento(row));
+      lastMovimiento = new PrincipalMovimiento(row);
+      console.table(lastMovimiento);
       break;
+    case ComplementarioConcepto.type:
+      const concepto = new ComplementarioConcepto(row);
+      lastMovimiento.conceptos[parseInt(concepto.secuencia, 10)] =
+        concepto.concepto;
+      console.table(concepto);
+      break;
+    case FinCuenta.type:
+      console.table(new FinCuenta(row));
+      break;
+
     case FinFichero.type:
       console.log('fin fichero');
       break loop;

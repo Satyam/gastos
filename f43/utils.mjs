@@ -1,8 +1,12 @@
 import { ISO4217 } from './iso4217.mjs';
 const rxAllNum = /^\d+$/;
 
+export function stringField(row, start, qty) {
+  return row.substring(start, start + qty);
+}
+
 export function numField(row, start, qty) {
-  const val = row.substring(start, start + qty);
+  const val = stringField(row, start, qty);
   if (!rxAllNum.test(val)) {
     throw new Error(
       `numField: Valor desde ${start} hasta ${start + qty} ha de ser numérico`
@@ -11,8 +15,12 @@ export function numField(row, start, qty) {
   return val;
 }
 
+export function numValue(row, start, qty) {
+  return parseInt(numField(row, start, qty), 10);
+}
+
 export function importe(row, start) {
-  const imp = parseInt(numField(row, start + 1, 14), 10) / 100;
+  const imp = numValue(row, start + 1, 14) / 100;
   switch (numField(row, start, 1)) {
     case '1':
       return -imp;
