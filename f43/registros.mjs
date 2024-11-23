@@ -17,7 +17,7 @@ export class CabeceraCuenta {
     try {
       confirmType(row, CabeceraCuenta.type);
       this.entidad = numField(row, 2, 4);
-      this.oficina = numField(row, 4, 4);
+      this.oficina = numField(row, 6, 4);
       this.cuenta = numField(row, 10, 10);
       this.fInicial = new Fecha(numField(row, 20, 6));
       this.fFinal = new Fecha(numField(row, 26, 6));
@@ -50,7 +50,7 @@ export class PrincipalMovimiento {
       this.nroDoc = numField(row, 42, 10);
       this.ref1 = stringField(row, 52, 12);
       this.ref2 = stringField(row, 64, 16);
-      this.conceptos = [];
+      this.detalle = '';
     } catch (err) {
       throw new Error(`PrincipalMovimiento: ${err}`);
     }
@@ -62,8 +62,8 @@ export class ComplementarioConcepto {
   constructor(row) {
     try {
       confirmType(row, ComplementarioConcepto.type);
-      this.secuencia = numField(row, 2, 2);
-      this.concepto = stringField(row, 4, 76);
+      this.secuencia = numValue(row, 2, 2);
+      this.concepto = stringField(row, 4, 76).trim();
     } catch (err) {
       throw new Error(`ComplementarioConcepto: ${err}`);
     }
