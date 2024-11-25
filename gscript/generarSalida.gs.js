@@ -132,7 +132,7 @@ function generarSalida() {
     ]);
     t.getRange(row, col + 1, 5, 1).setFormulasR1C1([
       ['R[-3]C[-3]'],
-      ['sum(R2C[-2]:R[-7]C[-2])'],
+      ['sum(R2C[-2]:R[-6]C[-2])'],
       ['sum(R2C[-1]:R[-7]C[-1])'],
       ['0'],
       ['max(R[-1]C - sum(R[-2]C:R[-4]C);0)'],
