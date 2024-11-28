@@ -123,19 +123,21 @@ function generarSalida() {
       .setNumberFormat(NUMBER_FORMAT);
   };
   const addEstimateCalculation = (row, col) => {
-    t.getRange(row, col, 5, 1).setValues([
+    t.getRange(row, col, 6, 1).setValues([
       ['Saldo mes pasado'],
       ['Gastos del mes'],
       ['Estimados antes alquiler'],
       ['Tarjeta'],
       ['Faltante'],
+      ['Sobrante'],
     ]);
-    t.getRange(row, col + 1, 5, 1).setFormulasR1C1([
+    t.getRange(row, col + 1, 6, 1).setFormulasR1C1([
       ['R[-3]C[-3]'],
       ['sum(R2C[-2]:R[-6]C[-2])'],
       ['sum(R2C[-1]:R[-7]C[-1])'],
       ['0'],
       ['max(R[-1]C - sum(R[-2]C:R[-4]C);0)'],
+      ['max(sum(R[-3]C:R[-5]C) - R[-2]C ;0)'],
     ]);
   };
   // end of private functions
