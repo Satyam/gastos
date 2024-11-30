@@ -34,8 +34,8 @@ function procesarArchivo(formEl) {
           throw new Error('Malformed line in file');
         }
       })
-      .sort((rowA, rowB) => rowA[0].compare(rowB[0]));
-
+      .reverse();
+  //.sort((rowA, rowB) => rowA[0].compare(rowB[0]));
   // end of private functions
 
   sSheet.setActiveSheet(h);
