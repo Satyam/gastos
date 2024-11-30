@@ -105,7 +105,7 @@ function generarSalida() {
   const addBottomFormulas = (row) => {
     t.getRange(row, 3, 1, cols - 1)
       .setFormulasR1C1([
-        Array(cols - 1).fill('=sum(R2C:R[-7]C) + R[-2]C[-1] - R[-2]C'),
+        Array(cols - 1).fill('=SUM(R2C: R[-7]C) + R[-2]C[-1] - R[-2]C'),
       ])
       .setNumberFormat(NUMBER_FORMAT);
   };
@@ -114,31 +114,31 @@ function generarSalida() {
     t.getRange(row, col, 1, 4)
       .setFormulasR1C1([
         [
-          '=SUM(RC[-2]:RC2)/COLUMNS(RC[-2]:RC2)',
-          '=RC[-1]* 12',
+          '=SUM(RC[-2]: RC2) / COLUMNS(RC[-2]: RC2)',
+          '=RC[-1] * 12',
           '=RC[1] / 12',
-          '=SUM(RC[-5]:RC[-16])',
+          '=SUM(RC[-5]: RC[-16])',
         ],
       ])
       .setNumberFormat(NUMBER_FORMAT);
   };
   const addEstimateCalculation = (row, col) => {
-    t.getRange(row, col, 6, 1).setValues([
+    t.getRange(row, col, 5, 1).setValues([
       ['Saldo mes pasado'],
-      ['Gastos del mes'],
+      ['Movimientos del mes'],
       ['Estimados antes alquiler'],
       ['Tarjeta'],
-      ['Faltante'],
-      ['Sobrante'],
+      ['Saldo'],
     ]);
-    t.getRange(row, col + 1, 6, 1).setFormulasR1C1([
-      ['R[-3]C[-3]'],
-      ['sum(R2C[-2]:R[-6]C[-2])'],
-      ['sum(R2C[-1]:R[-7]C[-1])'],
-      ['0'],
-      ['max(R[-1]C - sum(R[-2]C:R[-4]C);0)'],
-      ['max(sum(R[-3]C:R[-5]C) - R[-2]C ;0)'],
-    ]);
+    t.getRange(row, col + 1, 5, 1)
+      .setFormulasR1C1([
+        ['R[-3]C[-3]'],
+        ['SUM(R2C[-2]: R[-6]C[-2])'],
+        ['SUM(R2C[-1]: R[-7]C[-1])'],
+        ['0'],
+        ['SUM(R[-1]C: R[-4]C)'],
+      ])
+      .setNumberFormat(NUMBER_FORMAT);
   };
   // end of private functions
 
