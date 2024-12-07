@@ -111,13 +111,14 @@ function generarSalida() {
       .setNumberFormat(NUMBER_FORMAT);
   };
   const addEstimateCalculation = (row, col) => {
-    t.getRange(row, col, 5, 1).setValues([
+    t.getRange(row, col - 1, 5, 1).setValues([
       ['Saldo mes pasado'],
       ['Movimientos del mes'],
       ['Estimados antes alquiler'],
       ['Tarjeta'],
       ['Saldo'],
     ]);
+    t.getRange(row, col - 1, 5, 2).mergeAcross();
     t.getRange(row, col + 1, 5, 1)
       .setFormulasR1C1([
         ['R[-3]C[-3]'],
@@ -127,6 +128,14 @@ function generarSalida() {
         ['SUM(R[-1]C: R[-4]C)'],
       ])
       .setNumberFormat(NUMBER_FORMAT);
+    t.getRange(row, col - 1, 5, 3).setBorder(
+      true,
+      true,
+      true,
+      true,
+      null,
+      null
+    );
   };
   // end of private functions
 
