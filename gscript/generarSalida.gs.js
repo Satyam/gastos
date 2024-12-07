@@ -87,21 +87,6 @@ function generarSalida() {
       .setBackground(BKG_BAND);
   };
 
-  const showTests = (row) => {
-    t.getRange(row, 1, 2, 1).setValues([
-      [HEADINGS.ANTES_TARJETA],
-      [HEADINGS.ANTES_ALQUILER],
-    ]);
-    const tarj = hash[HEADINGS.ANTES_TARJETA];
-    const alq = hash[HEADINGS.ANTES_ALQUILER];
-    t.getRange(row, 2, 2, cols)
-      .setValues([
-        monthsArray.map((ym) => (tarj[ym] ? tarj[ym][0][1] : '')),
-        monthsArray.map((ym) => (alq[ym] ? alq[ym][0][1] : '')),
-      ])
-      .setNumberFormat(NUMBER_FORMAT);
-  };
-
   const addBottomFormulas = (row) => {
     t.getRange(row, 3, 1, cols - 1)
       .setFormulasR1C1([
@@ -170,7 +155,6 @@ function generarSalida() {
   });
 
   showSaldos(rows + 1);
-  showTests(rows + 10);
   addBottomFormulas(rows + 2);
   addEstimateCalculation(rows + 4, cols + 2);
   t.autoResizeColumn(1);
