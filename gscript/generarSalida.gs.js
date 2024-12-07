@@ -17,6 +17,12 @@ function generarSalida() {
     t.appendRow([
       heading.substring(2).trim(),
       ...monthsArray.map(Fecha.ymToString),
+      'Previstos antes de alquiler',
+      '',
+      'Promedio mensual total',
+      'Promedio anual total',
+      'Promedio mensual último año',
+      'Promedio último año',
     ]);
     t.getRange(t.getLastRow(), 1).setFontSize(BIG_FONT);
     t.getRange(t.getLastRow(), 1, 1, t.getLastColumn())
@@ -25,7 +31,8 @@ function generarSalida() {
       .setVerticalAlignment('middle')
       .setFontWeight('bold')
       .offset(0, 1)
-      .setHorizontalAlignment('center');
+      .setHorizontalAlignment('center')
+      .setWrap(true);
   };
 
   const setCell = (col, cargos, frecuencia) => {
@@ -88,7 +95,7 @@ function generarSalida() {
   };
 
   const addRowFormulas = (row, col) => {
-    t.getRange(row, col, 1, 4)
+    t.getRange(row, col + 1, 1, 4)
       .setFormulasR1C1([
         [
           '=SUM(RC[-2]: RC2) / COLUMNS(RC[-2]: RC2)',
