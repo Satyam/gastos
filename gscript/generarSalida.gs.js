@@ -87,14 +87,6 @@ function generarSalida() {
       .setBackground(BKG_BAND);
   };
 
-  const addBottomFormulas = (row) => {
-    t.getRange(row, 3, 1, cols - 1)
-      .setFormulasR1C1([
-        Array(cols - 1).fill('=SUM(R2C: R[-7]C) + R[-2]C[-1] - R[-2]C'),
-      ])
-      .setNumberFormat(NUMBER_FORMAT);
-  };
-
   const addRowFormulas = (row, col) => {
     t.getRange(row, col, 1, 4)
       .setFormulasR1C1([
@@ -155,7 +147,6 @@ function generarSalida() {
   });
 
   showSaldos(rows + 1);
-  addBottomFormulas(rows + 2);
   addEstimateCalculation(rows + 4, cols + 2);
   t.autoResizeColumn(1);
   t.getRange(t.getLastRow(), t.getLastColumn()).activateAsCurrentCell();
