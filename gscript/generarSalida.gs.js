@@ -92,6 +92,10 @@ function generarSalida() {
       .setValues([saldos])
       .setNumberFormat(NUMBER_FORMAT)
       .setBackground(BKG_BAND);
+    t.getRange(saldosRow, saldos.length + 2, 1, 1)
+      .setFormulaR1C1('=SUM(R2C:R[-1]C)')
+      .setNumberFormat(NUMBER_FORMAT)
+      .setBackground(BKG_BAND);
   };
 
   const addRowFormulas = (row, col) => {
@@ -118,7 +122,7 @@ function generarSalida() {
       .setFormulasR1C1([
         ['R[-3]C[-3]'],
         ['SUM(R2C[-2]: R[-6]C[-2])'],
-        ['SUM(R2C[-1]: R[-7]C[-1])'],
+        ['R[-5]C[-1]'],
         ['0'],
         ['SUM(R[-1]C: R[-4]C)'],
       ])
