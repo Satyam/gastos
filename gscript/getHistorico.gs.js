@@ -72,9 +72,12 @@ function getHistoricoHash() {
     insideGap.add(inside, heading, fecha, importe);
 
     switch (heading) {
+      // This one groups several entries within the Varios heading
       case HEADINGS.VARIOS:
         descHash.add(concepto, fecha, importe);
         break;
+      // The following two help built the `within` tab
+      // via the `insideGap.gs` module
       case HEADINGS.TARJETA:
         inside = true;
         setHashTo(HEADINGS.ANTES_TARJETA, prevSaldo);
@@ -83,6 +86,7 @@ function getHistoricoHash() {
         inside = false;
         setHashTo(HEADINGS.ANTES_ALQUILER, prevSaldo);
         break;
+      // Up to here
     }
     return hash;
   }, {});

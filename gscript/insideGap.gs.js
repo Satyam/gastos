@@ -1,3 +1,11 @@
+/**
+ * Produces a tab `within` showing whether expenses come
+ * after the credit card is due and before the rent comes in.
+ * It helps in making the estimation of how much money to have
+ * in reserve before the rent comes.
+ * It also provides info to build the 'estimados' sheet
+ */
+
 class InsideGap {
   constructor(ultimoAnyo) {
     this.ultimoAnyo = ultimoAnyo;
@@ -20,6 +28,8 @@ class InsideGap {
     }, {});
   }
   add(inside, heading, fecha, importe) {
+    // drop the anual payment from the statistics so it counts only the monthly 'copagos'
+    if (heading === HEADINGS.SANITAS && importe < -1000) return;
     const hh = this.hash[heading];
     const dentro = this.ultimoAnyo.compare(fecha) < 0;
     hh.total += 1;
