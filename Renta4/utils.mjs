@@ -10,6 +10,20 @@ export async function readCSV(file) {
     );
 }
 
+export function sliceAfter(rows, pattern) {
+  const l = rows.length;
+  for (let i = 0; i < l; i++) {
+    if (rows[i].join('|').startsWith(pattern)) {
+      return rows.slice(i + 1);
+    }
+  }
+  throw new Error(`Pattern [${pattern}] not found`);
+}
+
+export function parseImporte(s) {
+  return parseFloat(s.replace(',', '.'));
+}
+
 export class Fecha {
   constructor(y, m, d = 1) {
     if (y instanceof Fecha) {
