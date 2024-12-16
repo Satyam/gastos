@@ -42,7 +42,7 @@ export function processSaldoEnDivisa() {
         }
         return acc;
       default:
-        const f = row.fecha.toString();
+        const f = row.fecha;
         if (lastFecha > f) {
           throw new Error(`Fechas desordenadas ${lastFecha} - ${f}`);
         }

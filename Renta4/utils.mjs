@@ -73,19 +73,12 @@ export class Fecha {
   get ym() {
     return `${this.yyyy}-${this.mm}`;
   }
-  toString() {
+  get [Symbol.toStringTag]() {
     return `${this.yyyy}-${this.mm}-${this.dd}`;
   }
   toDate() {
     return new Date(this.y, this.m - 1, this.d);
   }
-  /*  valueOf() {
-      return `${this.yyyy}-${this.mm}-${this.dd}`;
-    }
-     [Symbol.toPrimitive](hint) {
-      return `${this.yyyy}-${this.mm}-${this.dd}`;
-    }
-  */
   addMonths(m) {
     this.m += m;
     this._normalize();
