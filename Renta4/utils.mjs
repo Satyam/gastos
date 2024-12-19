@@ -73,8 +73,11 @@ export class Fecha {
   get ym() {
     return `${this.yyyy}-${this.mm}`;
   }
-  get [Symbol.toStringTag]() {
+  get iso() {
     return `${this.yyyy}-${this.mm}-${this.dd}`;
+  }
+  get [Symbol.toStringTag]() {
+    return this.iso;
   }
   toDate() {
     return new Date(this.y, this.m - 1, this.d);

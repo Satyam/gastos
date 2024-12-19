@@ -1,4 +1,5 @@
 import { readCSV, Fecha, sliceAfter, parseImporte } from './utils.mjs';
+import { insertMov } from './sql.mjs';
 
 let saldoEnDivisa = [];
 
@@ -84,6 +85,7 @@ export function processSaldoEnDivisa() {
           );
         }
         saldo = row.saldo;
+        insertMov(row.fecha.iso, row.op, row.fondo, row.importe, row.saldo);
         return [...acc, row];
     }
   }, []);
