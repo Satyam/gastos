@@ -24,5 +24,41 @@ for (const file of files.sort()) {
   }
 }
 const saldoEnDivisa = processSaldoEnDivisa();
-
 console.table(saldoEnDivisa);
+
+// const retenciones = {};
+// for (const mov of saldoEnDivisa) {
+//   const f = mov.fecha;
+//   if (!(f in retenciones)) {
+//     retenciones[f] = {};
+//   }
+//   if (mov.concepto.startsWith('VENTA DE ')) {
+//     const fondo = mov.concepto.substring('VENTA DE '.length);
+//     if (!(fondo in retenciones[f])) {
+//       retenciones[f][fondo] = {};
+//     }
+//     retenciones[f][fondo].venta = mov.importe;
+//   }
+//   if (mov.concepto.startsWith('RETENCION A CUENTA ')) {
+//     const fondo = mov.concepto.substring('RETENCION A CUENTA '.length);
+//     if (!(fondo in retenciones[f])) {
+//       retenciones[f][fondo] = {};
+//     }
+//     retenciones[f][fondo].retencion = mov.importe;
+//   }
+// }
+
+// for (const [f, resto] of Object.entries(retenciones)) {
+//   for (const [fondo, ops] of Object.entries(resto)) {
+//     if (ops.retencion && ops.venta) {
+//       console.log(
+//         f,
+//         fondo,
+//         ((ops.retencion / ops.venta) * 100).toFixed(2),
+//         ops.venta,
+//         ops.retencion
+//       );
+//     }
+//   }
+// }
+// console.log(JSON.stringify(retenciones, null, 2));
