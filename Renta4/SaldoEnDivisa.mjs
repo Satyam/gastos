@@ -1,92 +1,97 @@
 import { readCSV, Fecha, sliceAfter, parseImporte } from './utils.mjs';
 import { insertMov } from './sql.mjs';
 
-let saldoEnDivisa = [];
+let movs = [];
 
 const ops = [
-  'CAMPAÑA FONCUENTA',
-  'COMPRA DE',
-  'INTERESES',
-  'RETENCION A CUENTA',
-  'TRANSF. EMITIDA A',
-  'TRANSF. RECIBIDA DE',
-  'VENTA DE',
-  'SALDO ANTERIOR',
-  'SALDO FINAL',
-  'COMISION EMITIDA',
-  'ASIENTO DE APERTURA',
+  ['CAMPAÑA FONCUENTA'],
+  ['COMPRA DE', 'Compra'],
+  ['INTERESES'],
+  ['RETENCION A CUENTA', 'Retención'],
+  ['TRANSF. EMITIDA A', 'Transf. a'],
+  ['TRANSF. RECIBIDA DE', 'Transf. de'],
+  ['VENTA DE', 'Venta'],
+  // 'SALDO ANTERIOR',
+  // 'SALDO FINAL',
+  ['COMISION EMITIDA', 'Comisión'],
+  // 'ASIENTO DE APERTURA',
 ];
 
-export async function readSaldoEnDivisa(file) {
+export default async function saldoEnDivisa(files) {
+  for (const file of files) {
+    await readSaldoEnDivisa(file);
+  }
+  processSaldoEnDivisa();
+}
+
+async function readSaldoEnDivisa(file) {
   console.log('Saldo En Divisa', file);
   const rows = await readCSV(file);
-  saldoEnDivisa = saldoEnDivisa.concat(
-    sliceAfter(rows, 'FECHA|CONCEPTO|MOVIMIENTOS|SALDO').map((row) => {
-      const c = row[1];
-      let op = null,
-        fondo = '';
-      ops.forEach((o) => {
-        if (c.startsWith(o)) {
-          op = o;
-          fondo = c.replace(o, '').trim();
-        }
-      });
-      if (fondo.includes('BARREIRO')) fondo = 'Satyam';
-      if (fondo.includes('ROXANA')) fondo = 'Roxana';
-      if (!op) console.error(c);
+  movs = movs.concat(
+    sliceAfter(rows, 'FECHA|CONCEPTO|MOVIMIENTOS|SALDO').map((mov) => {
       return {
-        fecha: row[0] ? Fecha.fromSabadell(row[0]) : null,
-        concepto: c,
-        op,
-        fondo,
-        importe: parseImporte(row[2]),
-        saldo: parseImporte(row[3]),
+        fecha: mov[0] ? Fecha.fromSabadell(mov[0]) : null,
+        concepto: mov[1],
+        importe: parseImporte(mov[2]),
+        saldo: parseImporte(mov[3]),
       };
     })
   );
 }
 
-export function processSaldoEnDivisa() {
+function processSaldoEnDivisa() {
   let saldo = 0;
   let lastFecha = '2000-01-01';
 
-  return saldoEnDivisa.reduce((acc, row) => {
-    switch (row.concepto) {
+  for (const mov of movs) {
+    switch (mov.concepto) {
       case 'SALDO ANTERIOR':
-        if (row.saldo) {
+        if (mov.saldo) {
           throw new Error(
-            `Saldo anterior inesperado cerca de ${lastFecha}: ${row.saldo}`
+            `Saldo anterior inesperado cerca de ${lastFecha}: ${mov.saldo}`
           );
         }
-        return acc;
+        continue;
       case 'SALDO FINAL':
-        if (row.saldo !== saldo) {
+        if (mov.saldo !== saldo) {
           throw new Error(
-            `Saldo final inesperado después de ${lastFecha}: ${row.saldo}`
+            `Saldo final inesperado después de ${lastFecha}: ${mov.saldo}`
           );
         }
-        return acc;
+        continue;
       case 'ASIENTO DE APERTURA':
-        if (row.saldo !== saldo) {
+        if (mov.saldo !== saldo) {
           throw new Error(
-            `Asiento de apertura inesperado después de ${lastFecha}: ${row.saldo}`
+            `Asiento de apertura inesperado después de ${lastFecha}: ${mov.saldo}`
           );
         }
-        return acc;
+        continue;
       default:
-        const f = row.fecha;
+        const f = mov.fecha.iso;
         if (lastFecha > f) {
           throw new Error(`Fechas desordenadas ${lastFecha} - ${f}`);
         }
         lastFecha = f;
-        if (saldo + row.importe - row.saldo > 0.01) {
+        if (saldo + mov.importe - mov.saldo > 0.01) {
           throw new Error(
-            `Saldo en ${row.concepto} de ${f} no da \nSaldo ant:${saldo}, importe: ${row.importe} no da ${row.saldo}`
+            `Saldo en ${mov.concepto} de ${f} no da \nSaldo ant:${saldo}, importe: ${mov.importe} no da ${mov.saldo}`
           );
         }
-        saldo = row.saldo;
-        insertMov(row.fecha.iso, row.op, row.fondo, row.importe, row.saldo);
-        return [...acc, row];
+        saldo = mov.saldo;
+        const c = mov.concepto;
+        let op = null,
+          fondo = '';
+        ops.forEach(([o, r]) => {
+          if (c.startsWith(o)) {
+            op = r ?? o;
+            fondo = c.replace(o, '').trim();
+          }
+        });
+        if (fondo.includes('BARREIRO')) fondo = 'Satyam';
+        if (fondo.includes('ROXANA')) fondo = 'Roxana';
+        if (!op) console.error('operación desconocida', c);
+
+        insertMov(f, op, fondo, mov.importe, saldo);
     }
-  }, []);
+  }
 }
