@@ -9,7 +9,7 @@ soffice --convert-to "csv:Text - txt - csv (StarCalc):9,34,76,1,,0,,,,,,-1" --ou
 */
 import saldoEnDivisa from './SaldoEnDivisa.mjs';
 import ingresoRetiradas from './IngresosRetiradas.mjs';
-import { getAllMovs } from './sql.mjs';
+import { getAllMovs, getAllIngSals } from './sql.mjs';
 
 // await $`soffice --convert-to "csv:Text - txt - csv (StarCalc):9,34,76,1,,0,,,,,,-1" --outdir ./csv ./downloads/*.xls`;
 
@@ -19,7 +19,8 @@ await ingresoRetiradas(
   files.filter((file) => file.includes('ingresosRetiradas'))
 );
 
-console.table(getAllMovs());
+// console.table(getAllMovs());
+console.table(getAllIngSals());
 // const retenciones = {};
 // for (const mov of saldoEnDivisa) {
 //   const f = mov.fecha;
