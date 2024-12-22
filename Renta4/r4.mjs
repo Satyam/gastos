@@ -7,19 +7,31 @@ import 'zx/globals';
 soffice --convert-to "csv:Text - txt - csv (StarCalc):9,34,76,1,,0,,,,,,-1" --outdir ./csv *.xls
 
 */
-import saldoEnDivisa from './SaldoEnDivisa.mjs';
-import ingresoRetiradas from './IngresosRetiradas.mjs';
-import { getAllMovs, getAllIngSals } from './sql.mjs';
+import { initDb } from './sql.mjs';
+import {
+  createMovsTable,
+  saldoEnDivisa,
+  getAllMovs,
+} from './SaldoEnDivisa.mjs';
+import {
+  createIngSalsTable,
+  ingresosRetiradas,
+  getAllIngSals,
+} from './IngresosRetiradas.mjs';
 
 // await $`soffice --convert-to "csv:Text - txt - csv (StarCalc):9,34,76,1,,0,,,,,,-1" --outdir ./csv ./downloads/*.xls`;
 
+const db = await initDb();
+createMovsTable(db);
+createIngSalsTable(db);
+
 const files = await glob('csv/*.csv');
 await saldoEnDivisa(files.filter((file) => file.includes('Saldo en Divisa')));
-await ingresoRetiradas(
+await ingresosRetiradas(
   files.filter((file) => file.includes('ingresosRetiradas'))
 );
 
-// console.table(getAllMovs());
+console.table(getAllMovs());
 console.table(getAllIngSals());
 // const retenciones = {};
 // for (const mov of saldoEnDivisa) {

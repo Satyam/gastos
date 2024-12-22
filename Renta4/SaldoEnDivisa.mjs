@@ -1,7 +1,24 @@
 import { readCSV, Fecha, sliceAfter, parseImporte } from './utils.mjs';
-import { insertMov } from './sql.mjs';
 
 let movs = [];
+const statements = {};
+export function createMovsTable(db) {
+  db.exec(`
+    CREATE TABLE Movs (
+      id	INTEGER NOT NULL,
+      fecha	TEXT NOT NULL,
+      op	TEXT NOT NULL,
+      fondo	TEXT,
+      importe	REAL NOT NULL,
+      saldo	REAL,
+      PRIMARY KEY(id AUTOINCREMENT)
+    ) STRICT
+  `);
+  statements.insertMov = db.prepare(
+    'INSERT INTO Movs (fecha, op, fondo, importe, saldo) VALUES ($fecha, $op, $fondo, $importe, $saldo)'
+  );
+  statements.selectAllMovs = db.prepare('SELECT * FROM Movs ORDER BY id,fecha');
+}
 
 const ops = [
   ['CAMPAÑA FONCUENTA'],
@@ -11,13 +28,10 @@ const ops = [
   ['TRANSF. EMITIDA A', 'Transf. a'],
   ['TRANSF. RECIBIDA DE', 'Transf. de'],
   ['VENTA DE', 'Venta'],
-  // 'SALDO ANTERIOR',
-  // 'SALDO FINAL',
   ['COMISION EMITIDA', 'Comisión'],
-  // 'ASIENTO DE APERTURA',
 ];
 
-export default async function saldoEnDivisa(files) {
+export async function saldoEnDivisa(files) {
   for (const file of files) {
     await readSaldoEnDivisa(file);
   }
@@ -25,7 +39,6 @@ export default async function saldoEnDivisa(files) {
 }
 
 async function readSaldoEnDivisa(file) {
-  console.log('Saldo En Divisa', file);
   const rows = await readCSV(file);
   movs = movs.concat(
     sliceAfter(rows, 'FECHA|CONCEPTO|MOVIMIENTOS|SALDO').map((mov) => {
@@ -95,3 +108,9 @@ function processSaldoEnDivisa() {
     }
   }
 }
+
+function insertMov($fecha, $op, $fondo, $importe, $saldo) {
+  return statements.insertMov.run({ $fecha, $op, $fondo, $importe, $saldo });
+}
+
+export const getAllMovs = () => statements.selectAllMovs.all();
