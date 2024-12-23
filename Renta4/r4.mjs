@@ -18,21 +18,26 @@ import {
   ingresosRetiradas,
   getAllIngSals,
 } from './IngresosRetiradas.mjs';
+import { createResumenTable, resumen } from './resumen.mjs';
 
 // await $`soffice --convert-to "csv:Text - txt - csv (StarCalc):9,34,76,1,,0,,,,,,-1" --outdir ./csv ./downloads/*.xls`;
 
 const db = await initDb();
 createMovsTable(db);
 createIngSalsTable(db);
+createResumenTable(db);
 
 const files = await glob('csv/*.csv');
-await saldoEnDivisa(files.filter((file) => file.includes('Saldo en Divisa')));
-await ingresosRetiradas(
-  files.filter((file) => file.includes('ingresosRetiradas'))
+await saldoEnDivisa(
+  files.filter((file) => file.endsWith('Saldo en Divisa.csv'))
 );
+await ingresosRetiradas(
+  files.filter((file) => file.endsWith('ingresosRetiradas.csv'))
+);
+await resumen(files.filter((file) => file.endsWith('Resumen.csv')));
 
-console.table(getAllMovs());
-console.table(getAllIngSals());
+// console.table(getAllMovs());
+// console.table(getAllIngSals());
 // const retenciones = {};
 // for (const mov of saldoEnDivisa) {
 //   const f = mov.fecha;
