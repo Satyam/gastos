@@ -1,6 +1,5 @@
 import { readCSV, Fecha, sliceAfter, parseImporte } from './utils.mjs';
 
-let movs = [];
 const statements = {};
 export function createMovsTable(db) {
   db.exec(`
@@ -32,27 +31,31 @@ const ops = [
 ];
 
 export async function saldoEnDivisa(files) {
+  const ms = {};
   for (const file of files) {
-    await readSaldoEnDivisa(file);
+    const m = await readSaldoEnDivisa(file);
+    ms[m[0].fecha?.iso ?? m[1].fecha.iso] = m;
   }
-  processSaldoEnDivisa();
+  processSaldoEnDivisa(
+    Object.keys(ms)
+      .toSorted()
+      .reduce((movs, m) => movs.concat(ms[m]), [])
+  );
 }
 
 async function readSaldoEnDivisa(file) {
   const rows = await readCSV(file);
-  movs = movs.concat(
-    sliceAfter(rows, 'FECHA|CONCEPTO|MOVIMIENTOS|SALDO').map((mov) => {
-      return {
-        fecha: mov[0] ? Fecha.fromSabadell(mov[0]) : null,
-        concepto: mov[1],
-        importe: parseImporte(mov[2]),
-        saldo: parseImporte(mov[3]),
-      };
-    })
-  );
+  return sliceAfter(rows, 'FECHA|CONCEPTO|MOVIMIENTOS|SALDO').map((mov) => {
+    return {
+      fecha: mov[0] ? Fecha.fromSabadell(mov[0]) : null,
+      concepto: mov[1],
+      importe: parseImporte(mov[2]),
+      saldo: parseImporte(mov[3]),
+    };
+  });
 }
 
-function processSaldoEnDivisa() {
+function processSaldoEnDivisa(movs) {
   let saldo = 0;
   let lastFecha = '2000-01-01';
 
