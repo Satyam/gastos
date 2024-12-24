@@ -18,7 +18,7 @@ import {
   ingresosRetiradas,
   getAllIngSals,
 } from './IngresosRetiradas.mjs';
-import { createResumenTable, resumen } from './resumen.mjs';
+import { createResumenTable, resumen, getAllResumenes } from './resumen.mjs';
 
 // await $`soffice --convert-to "csv:Text - txt - csv (StarCalc):9,34,76,1,,0,,,,,,-1" --outdir ./csv ./downloads/*.xls`;
 
@@ -32,12 +32,13 @@ await saldoEnDivisa(
   files.filter((file) => file.endsWith('Saldo en Divisa.csv'))
 );
 await ingresosRetiradas(
-  files.filter((file) => file.endsWith('ingresosRetiradas.csv'))
+  files.filter((file) => file.endsWith('Operaciones.csv'))
 );
 await resumen(files.filter((file) => file.endsWith('Resumen.csv')));
 
-// console.table(getAllMovs());
-// console.table(getAllIngSals());
+console.table(getAllMovs());
+console.table(getAllIngSals());
+console.table(getAllResumenes());
 // const retenciones = {};
 // for (const mov of saldoEnDivisa) {
 //   const f = mov.fecha;

@@ -1,25 +1,25 @@
-import { readCSV, Fecha, sliceAfter, parseImporte } from './utils.mjs';
+import { readCSV, parseImporte } from './utils.mjs';
 
 const tableName = 'ResumenAnual';
 const statements = {};
+
 export function createResumenTable(db) {
   db.exec(`
-CREATE TABLE ${tableName} (
-	year	INTEGER NOT NULL UNIQUE,
-	valorInicial	REAL,
-	aportaciones	REAL,
-	reembolsos	REAL,
-	resultadoAnual	REAL,
-	resultadoAcumulado	REAL,
-	PRIMARY KEY(year)
-);
-`);
-  statements.insertResumen = db.prepare(
-    `INSERT INTO ${tableName} 
-  (year,	valorInicial,	aportaciones,	reembolsos	,	resultadoAnual,	resultadoAcumulado) VALUES 
-  ($year,	$valorInicial,	$aportaciones,	$reembolsos	,	$resultadoAnual,	$resultadoAcumulado)`
-  );
-  statements.selectAllResumen = db.prepare(
+    CREATE TABLE ${tableName} (
+      year	INTEGER NOT NULL UNIQUE,
+      valorInicial	REAL,
+      aportaciones	REAL,
+      reembolsos	REAL,
+      plusvalia	REAL,
+      PRIMARY KEY(year)
+    );
+  `);
+  statements.insertResumen = db.prepare(`
+    INSERT INTO ${tableName} 
+      (year,	valorInicial,	aportaciones,	reembolsos	,	plusvalia) VALUES 
+      ($year,	$valorInicial,	$aportaciones,	$reembolsos	,	$plusvalia)
+    `);
+  statements.selectAllResumenes = db.prepare(
     `SELECT * FROM ${tableName} ORDER BY year`
   );
   statements.selectByYear = db.prepare(
@@ -40,8 +40,9 @@ const fieldNames = [
   '$valorInicial',
   '$aportaciones',
   '$reembolsos',
-  '$resultadoAnual',
-  '$resultadoAcumulado',
+  '$plusvalia',
+  // Por el momento voy a ignorar este campo porque no entiendo realmente qué significa
+  // '$resultadoAcumulado',
 ];
 
 export async function resumen(files) {
@@ -93,23 +94,44 @@ export async function resumen(files) {
     if (tmp.some((r) => r.length !== 5)) {
       throw new Error(`File ${file}, le faltan columnas`);
     }
-    console.table(tmp);
-    for (i = tmp[0].length - 1; i >= 0; i--) {
-      const y = tmp[0][i];
+    // console.table(tmp);
+    for (let nCol = tmp[0].length - 1; nCol >= 0; nCol--) {
+      const y = tmp[0][nCol];
       if (!res[y]) res[y] = {};
       const r = res[y];
-      for (let nr = 0; nr < 6; nr++) {
-        if (r[nr]) {
-          if (r[fieldNames[nr]] !== tmp[nr][i]) {
+      for (let nRow = 0; nRow < fieldNames.length; nRow++) {
+        const fieldName = fieldNames[nRow];
+        if (r[fieldName]) {
+          if (Math.abs(r[fieldName] - tmp[nRow][nCol]) > 0.01) {
             throw new Error(
-              `File ${file}, campo ${headings[nr]} del año ${y} no coincide`
+              `File ${file}, campo ${headings[nRow]} del año ${y} no coincide`
             );
           }
         } else {
-          r[fieldNames[nr]] = tmp[nr][i];
+          r[fieldName] = tmp[nRow][nCol];
         }
       }
     }
-    console.table(res);
+  }
+  for (const row of Object.values(res)) {
+    insertResumen(...Object.values(row));
   }
 }
+
+function insertResumen(
+  $year,
+  $valorInicial,
+  $aportaciones,
+  $reembolsos,
+  $plusvalia
+) {
+  return statements.insertResumen.run({
+    $year,
+    $valorInicial,
+    $aportaciones,
+    $reembolsos,
+    $plusvalia,
+  });
+}
+
+export const getAllResumenes = () => statements.selectAllResumenes.all();
