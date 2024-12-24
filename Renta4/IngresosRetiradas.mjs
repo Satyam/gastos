@@ -66,10 +66,7 @@ const replaceNombre = (field) => {
   return field;
 };
 
-// Retiros de R4 por año:
-// `select strftime('%Y',fechaValor) as year, sum(importe)
-//  from IngSals
-//  GROUP by year`
+// Retiros de R4 por año y promedio mensual:
 
 // Chequeando que las transferencias en un archivo figuran en el otro.
 // select * from IngSals left join Movs on Movs.fecha = IngSals.fechaValor

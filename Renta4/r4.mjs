@@ -39,6 +39,22 @@ await resumen(files.filter((file) => file.endsWith('Resumen.csv')));
 console.table(getAllMovs());
 console.table(getAllIngSals());
 console.table(getAllResumenes());
+
+// Retiros de R4 por año y promedio mensual:
+console.table(
+  db
+    .prepare(
+      `
+      select 
+        strftime('%Y',fechaValor) as "Año", 
+        format('%10.2f', sum(importe)) as "Retiro Anual", 
+        format('%10.2f', sum(importe) / 12) as "Promedio Mensual"
+      from IngSals
+      GROUP by "Año"
+    `
+    )
+    .all()
+);
 // const retenciones = {};
 // for (const mov of saldoEnDivisa) {
 //   const f = mov.fecha;
