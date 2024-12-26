@@ -36,58 +36,103 @@ await ingresosRetiradas(
 );
 await resumen(files.filter((file) => file.endsWith('Resumen.csv')));
 
-console.table(getAllMovs());
-console.table(getAllIngSals());
-console.table(getAllResumenes());
+// console.table(getAllMovs());
+// console.table(getAllIngSals());
+// console.table(getAllResumenes());
 
 // Retiros de R4 por año y promedio mensual:
+// console.table(
+//   db
+//     .prepare(
+//       `
+//       select
+//         year as "Año",
+// 		    format('%10.2f', valorInicial) as "Valor Inicial",
+//         format('%10.2f', sum(importe)) as "Retiro Anual",
+//         format('%10.2f', sum(importe) / 12) as "Promedio Mensual"
+//       from IngSals right join ResumenAnual on (strftime('%Y',fechaValor) == year)
+//       GROUP by year
+//     `
+//     )
+//     .all()
+// );
+
+db.exec(`
+  create view RetencionesPorAño as
+  select year, Retención, TransfSalida from (
+    select strftime('%Y', fecha) as year, sum(importe) as Retención from movs where op == 'Retención' group by year
+  ) join (
+    select strftime('%Y', fecha) as year, sum(importe) as TransfSalida from movs where op == 'Transf. a' group by year
+  ) using (year)
+`);
+
+db.exec(`
+  create view RetirosPorAño as
+  select strftime('%Y',fechaValor) as year, sum(importe) as Retiro from ingSals group by year
+`);
+db.exec(`
+  create view ResumenAnualPlus as
+  select RA1.*, RA2.valorInicial as valorSiguiente
+    from ResumenAnual as RA1
+    left join ResumenAnual as RA2
+    on (RA1.year +1 == RA2.year)
+`);
+
+db.function(
+  'fmtCurrency',
+  new Function(`val`, `return val.toFixed(2).padStart(10, ' ')`)
+);
 console.table(
   db
     .prepare(
       `
-      select 
-        strftime('%Y',fechaValor) as "Año", 
-        format('%10.2f', sum(importe)) as "Retiro Anual", 
-        format('%10.2f', sum(importe) / 12) as "Promedio Mensual"
-      from IngSals
-      GROUP by "Año"
-    `
+select year as Año,
+	format('%10.2f',valorInicial) as 'Valor Inicial',
+	format('%10.2f%%',(resultadoAnual /valorInicial) * 100) as Rentabilidad ,
+	iif(Retiro, format('%10.2f',Retiro),'') as Retiro,
+	iif(Retiro, format('%10.2f',Retiro / 12),'') 'Retiro Promedio Mensual',
+	iif(Retención, format('%10.2f',Retención),'') as 'Retención' ,
+	iif(Retención, format('%10.2f%%',Retención / reembolsos * 100),'') as 'Retención %' ,
+	format('%10.2f',reembolsos)as Reembolsos,
+	format('%10.2f',aportaciones) as Aportaciones
+  --	Retiro - TransfSalida - aportaciones as 'Debe ser 0 o null',
+  --	format('%10.2f',valorSiguiente - valorInicial) as difValor,
+  --	format('%10.2f',valorSiguiente - valorInicial - resultadoAnual) as difresult,
+  --	format('%10.2f%%',(resultadoAnual /valorInicial) * 100) as rentabilidad ,
+  --	format('%10.2f',reembolsos / 12) as reembolsoPromedioMensual,
+  --	format('%10.2f%%',Retención / reembolsos * 100) as 'Retención %' ,
+  from ResumenAnualPlus 
+  left join RetencionesPorAño using (year) 
+  left join RetirosPorAño using (year)
+`
     )
     .all()
 );
-// const retenciones = {};
-// for (const mov of saldoEnDivisa) {
-//   const f = mov.fecha;
-//   if (!(f in retenciones)) {
-//     retenciones[f] = {};
-//   }
-//   if (mov.concepto.startsWith('VENTA DE ')) {
-//     const fondo = mov.concepto.substring('VENTA DE '.length);
-//     if (!(fondo in retenciones[f])) {
-//       retenciones[f][fondo] = {};
-//     }
-//     retenciones[f][fondo].venta = mov.importe;
-//   }
-//   if (mov.concepto.startsWith('RETENCION A CUENTA ')) {
-//     const fondo = mov.concepto.substring('RETENCION A CUENTA '.length);
-//     if (!(fondo in retenciones[f])) {
-//       retenciones[f][fondo] = {};
-//     }
-//     retenciones[f][fondo].retencion = mov.importe;
-//   }
-// }
 
-// for (const [f, resto] of Object.entries(retenciones)) {
-//   for (const [fondo, ops] of Object.entries(resto)) {
-//     if (ops.retencion && ops.venta) {
-//       console.log(
-//         f,
-//         fondo,
-//         ((ops.retencion / ops.venta) * 100).toFixed(2),
-//         ops.venta,
-//         ops.retencion
-//       );
-//     }
-//   }
-// }
-// console.log(JSON.stringify(retenciones, null, 2));
+// select * ,
+// 	Retiro - TransfSalida - aportaciones as 'Debe ser 0 o null',
+// 	format('%10.2f',valorSiguiente - valorInicial) as difValor,
+// 	format('%10.2f',valorSiguiente - valorInicial - resultadoAnual) as difresult,
+// 	format('%10.2f%%',(resultadoAnual /valorInicial) * 100) as rentabilidad ,
+// 	format('%10.2f',reembolsos / 12) as reembolsoPromedioMensual,
+// 	format('%10.2f%%',Retención / reembolsos * 100) as 'Retención %'
+
+// from ResumenAnualPlus
+// left join RetencionesPorAño using (year)
+// left join RetirosPorAño using (year)
+
+// select
+//   year as "Año",
+//   format('%10.2f', RA.valorInicial) as "Valor Inicial",
+//   format('%10.2f', RA.valorSiguiente) as "Valor Siguiente",
+//   format('%10.2f', Retiro) as "Retiro Anual",
+//   format('%10.2f', Retiro / 12) as "Promedio Mensual"
+// from
+//   (select strftime('%Y',fechaValor) as year, sum(importe) as Retiro from ingSals group by year) as I
+// right join
+//   ( select RA1.*, RA2.valorInicial as valorSiguiente
+//     from ResumenAnual as RA1
+//     left join ResumenAnual as RA2
+//     on (RA1.year +1 == RA2.year)
+//   ) as RA
+// using (year) order by year
