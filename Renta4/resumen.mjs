@@ -10,14 +10,14 @@ export function createResumenTable(db) {
       valorInicial	REAL,
       aportaciones	REAL,
       reembolsos	REAL,
-      plusvalia	REAL,
+      resultadoAnual	REAL,
       PRIMARY KEY(year)
     );
   `);
   statements.insertResumen = db.prepare(`
     INSERT INTO ${tableName} 
-      (year,	valorInicial,	aportaciones,	reembolsos	,	plusvalia) VALUES 
-      ($year,	$valorInicial,	$aportaciones,	$reembolsos	,	$plusvalia)
+      (year,	valorInicial,	aportaciones,	reembolsos	,	resultadoAnual) VALUES 
+      ($year,	$valorInicial,	$aportaciones,	$reembolsos	,	$resultadoAnual)
     `);
   statements.selectAllResumenes = db.prepare(
     `SELECT * FROM ${tableName} ORDER BY year`
@@ -40,7 +40,7 @@ const fieldNames = [
   '$valorInicial',
   '$aportaciones',
   '$reembolsos',
-  '$plusvalia',
+  '$resultadoAnual',
   // Por el momento voy a ignorar este campo porque no entiendo realmente qué significa
   // '$resultadoAcumulado',
 ];
@@ -123,14 +123,14 @@ function insertResumen(
   $valorInicial,
   $aportaciones,
   $reembolsos,
-  $plusvalia
+  $resultadoAnual
 ) {
   return statements.insertResumen.run({
     $year,
     $valorInicial,
     $aportaciones,
     $reembolsos,
-    $plusvalia,
+    $resultadoAnual,
   });
 }
 
